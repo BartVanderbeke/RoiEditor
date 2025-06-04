@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Run RoiEditor via -m",
+      "type": "debugpy",
+      "request": "launch",
+      "module": "RoiEditor",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    }
+  ]
+}
