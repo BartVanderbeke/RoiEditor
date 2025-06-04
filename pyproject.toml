@@ -33,4 +33,4 @@ RoiEditor = "RoiEditor.__main__:main"
 include-package-data = true
 
 [tool.setuptools.package-data]
-"RoiEditor" = ["Lib/*.ui"]
+"RoiEditor" = ["RoiEditor/Lib/*.ui"]
