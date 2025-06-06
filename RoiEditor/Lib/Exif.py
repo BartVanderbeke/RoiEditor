@@ -34,27 +34,6 @@ def read_ome_metadata(tiff_path):
                 metadata["Image"]["Description"] = parse_description_text(desc["text"])
         return {"OME": metadata} # "BasicTags": basic_tags}
 
-            
-
-# def extract_basic_tags(tags):
-    # """Extract standard (non OME) tags out of a TIFF"""
-    # fields = {}
-    # resolution_unit_mapping = {
-    #     1: "none",
-    #     2: "inch",
-    #     3: "centimeter"
-    # }
-    # for name in ("XResolution", "YResolution", "ResolutionUnit"):
-    #     if name in tags:
-    #         value = tags[name].value
-    #         if isinstance(value, tuple) and len(value) == 2:
-    #             fields[name] = value[0] / value[1]
-    #         else:
-    #             fields[name] = value
-
-    # if "ResolutionUnit" in fields:
-    #     fields["ResolutionUnitString"] = resolution_unit_mapping.get(fields["ResolutionUnit"], "Unknown")
-    # return fields
 
 def parse_ome_xml(xml_string):
     root = ET.fromstring(xml_string)
@@ -116,7 +95,6 @@ def retrieve_image_info(meta_data):
             nominal_magnification = objective.get("NominalMagnification",None)
             break
 
-    # Haal Pixels-data op, als die er is
     pixels = image.get("Pixels", {})
     physical_size_x = pixels.get("PhysicalSizeX",None)
     physical_size_y = pixels.get("PhysicalSizeY",None)

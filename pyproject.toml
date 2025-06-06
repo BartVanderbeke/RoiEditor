@@ -7,7 +7,8 @@ name = "RoiEditor"
 version = "2.0.0"
 description = "ROI Editor - a Python-app for managing (Fiji/cellpose) ROIs"
 authors = [{ name = "Bart Vanderbeke" }]
-readme = ""
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.8"
 dependencies = [
     "Pillow",
@@ -22,15 +23,15 @@ dependencies = [
     "XlsxWriter"
 ]
 
-[tool.setuptools.packages.find]
-include = ["RoiEditor", "RoiEditor.Lib"]
-exclude = ["data", "TestData"]
-
 [project.scripts]
 RoiEditor = "RoiEditor.__main__:main"
 
 [tool.setuptools]
 include-package-data = true
 
+[tool.setuptools.packages.find]
+include = ["RoiEditor", "RoiEditor.Lib"]
+exclude = ["data", "TestData"]
+
 [tool.setuptools.package-data]
-"RoiEditor" = ["RoiEditor/Lib/*.ui"]
+"RoiEditor.Lib" = ["*.ui"]
