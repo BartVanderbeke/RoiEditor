@@ -66,20 +66,3 @@ class FileDialog(QFileDialog):
     #             w.selectAll()
     #             break
 
-if __name__ == "__main__":
-    import sys
-    from Stylesheet import overall
-
-    app = QApplication(sys.argv)
-    w = QWidget()
-    w.setStyleSheet(overall)
-    
-
-    x = 500
-    y = 500
-
-    fd = FileDialog(x,y,title="This my title",filter="*.txt",parent = w)
-    result = fd.showDialog()
-
-
-    sys.exit(app.exec())

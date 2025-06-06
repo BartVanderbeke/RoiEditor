@@ -9,7 +9,6 @@ When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
 """
-from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import (
     QMainWindow, QSizePolicy,
     QGraphicsPolygonItem, QGraphicsTextItem
@@ -265,80 +264,4 @@ class RoiImageWindow(QMainWindow):
         # minimize iso closing
         event.ignore()
         self.showMinimized()
-    
-    # def full_title(self) -> str:
-    #     return self.base_title+self.zoom_to_str().rjust(20)
-if __name__ == "__main__":
-    import sys
-    import numpy as np
-    from PyQt6.QtWidgets import QApplication
-    import sys
-    import numpy as np
-    
-    from .Roi import Roi
-    from .Context import gvars
 
-    from PyQt6.QtGui import QImage
-    from .TinyRoiFile import TinyRoiFile
-    from .StopWatch import *
-    from .TinyRoiManager import TinyRoiManager
-    from .Roi import Roi
-    from .RoiMeasurements import RoiMeasurements
-
-    from Stylesheet import overall
-
-    app = QApplication(sys.argv)
-
-    base_name = "./TestData/C_stitch"
-    zip_path = base_name + "_RoiSet.zip"
-    image_path= base_name + ".tiff"
-    num_threads = 12
-
-    background_img = QImage(image_path)
-
-    rm = TinyRoiManager()
-    StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
-    StopWatch.stop("roi read")
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
-    
-    StopWatch.start("msmts all")
-    msmts = RoiMeasurements(rm)
-    StopWatch.stop("msmts all")
-
-    def on_any_change(str):
-        log(f"Something changed: {str}")
-
-    dummy = QWidget()
-    dummy.setStyleSheet(overall)
-
-    win = RoiImageWindow(image_array=background_img,rm=rm,msmts=msmts, on_any_change=on_any_change,parent=dummy)
-
-
-    win.draw_image()
-    win.showNormal()
-
-    win.on_select_measurement(msmt_name="Area")
-    #win.on_set_overlay_visibility(overlay_visible=True)
-
-    msmts=["Area","Feret", "FeretAngle", "AngleShifted","MinFeret", "FeretX", "FeretY", "FeretRatio"]
-    
-    import random
-    def toggle_image():
-        msmt= random.choice(msmts)
-        win.on_select_measurement(msmt_name=msmt)
-        log(f"Triggering update: {msmt}")
-    
-    
-    from PyQt6.QtCore import  QTimer
-    timer = QTimer()
-    timer.timeout.connect(toggle_image)
-    timer.start(5000) 
-
-    sys.exit(app.exec())

@@ -142,30 +142,3 @@ class QRoiFileChooser:
         self.dialog.setParent(parent)
     def setWindowFlag(self,flag):
         self.dialog.setWindowFlag(flag) 
-
-if __name__ == "__main__":
-    from PyQt6.QtWidgets import QApplication,QWidget
-    import sys
-
-    app = QApplication(sys.argv)
-
-    from Stylesheet import overall
-
-    w = QWidget()
-    w.setStyleSheet(overall)
-
-
-    print("--- QOriginalFileChooser ---")
-    original_chooser = QOriginalFileChooser(parent = w)
-    selected, hint = original_chooser.showDialog()
-    print("Selected, hint:", selected,hint)
-
-    print("--- QLabelFileChooser ---")
-    label_chooser = QLabelFileChooser(hint=hint,parent=w)
-    print("Selected:", label_chooser.showDialog(hint))
-
-    print("--- QRoiFileChooser ---")
-    roi_chooser = QRoiFileChooser(parent=w)
-    print("Selected:", roi_chooser.showDialog())
-
-    sys.exit(app.exec())

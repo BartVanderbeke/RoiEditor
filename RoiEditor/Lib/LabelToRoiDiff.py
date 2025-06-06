@@ -11,11 +11,10 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 from .Roi import Roi
-from .StopWatch import *
 from .TinyRoiManager import TinyRoiManager
+from .TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),
@@ -65,9 +64,6 @@ def erase_label_edges(label_img):
 
     return result
 
-
-
-
 def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:
     
     height, width = label_image.shape
@@ -86,9 +82,8 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     max_digits=len(str( len(roi_array) ))
     corr = np.sqrt(1.00215)
 
-
     if not contours:
-        print(f"label image doen not contain contours!")
+        log(f"label image doen not contain contours!")
         return None
     for contour in contours:
         # a=cv2.contourArea(contour)
@@ -111,15 +106,15 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         # coords = centroid + s * (coords - centroid)
         # contour = coords.reshape(-1, 1, 2).astype(np.float32)
 
-        xpoints = np.array(coords[:, 0])
-        ypoints = np.array(coords[:, 1])
+        xpoints = np.array(coords[:, 0],dtype=np.int_)
+        ypoints = np.array(coords[:, 1],dtype=np.int_)
         n = len(xpoints)
 
         label_value = label_image[cy,cx]
         if label_value ==0:
             continue
         if coords.ndim != 2 or len(coords) < 3:
-            print(f"Contour is no polygon for {str(label_value)} : ndim= {coords.ndim}, #coords= {len(coords)}, #contours={len(contours)}",type="warning")
+            log(f"Contour is no polygon for {str(label_value)} : ndim= {coords.ndim}, #coords= {len(coords)}, #contours={len(contours)}",type="warning")
             continue
 
         left, top, w, h = cv2.boundingRect(contour)
@@ -148,87 +143,3 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         roi_array[label_value]=roi
     rm.add_from_list_unchecked(roi_array)
 
-import cv2
-import numpy as np
-import matplotlib.pyplot as plt
-import math
-def show_contours(contours):
-    n = len(contours)
-    cols = math.ceil(math.sqrt(n))
-    rows = math.ceil(n / cols)
-    fig, axes = plt.subplots(rows, cols, figsize=(3 * cols, 3 * rows))
-    axes = np.array(axes).reshape(-1) 
-
-    for i, cnt in enumerate(contours):
-        cnt = cnt.squeeze()
-        ax = axes[i]
-        if cnt.ndim == 2 and cnt.shape[0] >= 3:
-            ax.plot(cnt[:, 0], cnt[:, 1], color=np.random.rand(3,), linewidth=2)
-        ax.set_aspect('equal')
-        ax.set_title(f"Contour {i+1}")
-        ax.axis('on')
-
-    for j in range(i + 1, len(axes)):
-        fig.delaxes(axes[j])
-
-    plt.tight_layout()
-    plt.show()
-
-def show_contours2(contours):
-    fig, ax = plt.subplots(1, 1)
-    ax.set_aspect('equal')
-    ax.set_title(f"Contours")
-    ax.axis('on')
-
-    for cnt in contours:
-        cnt = cnt.squeeze()
-        if cnt.ndim == 2 and cnt.shape[0] >= 3:
-            ax.plot(cnt[:, 0], cnt[:, 1], color=np.random.rand(3,), linewidth=1)
-
-    plt.tight_layout()
-    plt.show()
-
-if __name__ == "__main__":
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    rm = TinyRoiManager()
-    label_image_path = "./TestData/A_stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-
-    label_image_path = "./TestData/B_stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-
-    for name, roi in last_3:
-        print(f"{name:8s} | {roi.n:3d} points | state: {Roi.state_to_str(roi.state)} | tags: {roi.tags}")
-
-    label_image_path = "./TestData/C_Stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-
-    for name, roi in last_3:
-        print(f"{name:8s} | {roi.n:3d} points | state: {Roi.state_to_str(roi.state)} | tags: {roi.tags}")
-
-    lbl_img = erase_label_edges(label_image)
-    lbl_img = (lbl_img > 0).astype(np.uint8) * 255
-    contours, _ = cv2.findContours(lbl_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    show_contours2(contours)

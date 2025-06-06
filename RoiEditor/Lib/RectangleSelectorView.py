@@ -15,6 +15,12 @@ from typing import Optional, Callable
 from PyQt6.QtWidgets import QGraphicsView, QGraphicsScene, QGraphicsRectItem,QWidget
 
 class RectangleSelectorView(QGraphicsView):
+    def dummy_callback_zoom(self, f : float) -> None:
+        print(f"RectangleSelectorView: no callback assigned {f}")
+    def dummy_callback_rect(self, r : QRectF) -> None:
+        print(f"RectangleSelectorView: no callback assigned")
+
+
     def __init__(self,
                  pixmap: QPixmap,
                  on_rect_drawn: Optional[Callable[[QRectF], None]] = None,
@@ -39,8 +45,8 @@ class RectangleSelectorView(QGraphicsView):
         self.rubber_band.setZValue(10)
         self.rubber_band.setVisible(False)
         self.scene.addItem(self.rubber_band)
-        self.on_rect_drawn=on_rect_drawn
-        self.on_change_zoom=on_change_zoom
+        self.on_rect_drawn=on_rect_drawn if on_rect_drawn else self.dummy_callback_rect
+        self.on_change_zoom=on_change_zoom if on_change_zoom else self.dummy_callback_zoom
         self.on_change_zoom(self._zoom)
 
     def mousePressEvent(self, event):

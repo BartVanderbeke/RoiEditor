@@ -10,7 +10,7 @@ I left the (GitHub) url of the original code next to the derived code.
 
 """
 from PyQt6.QtWidgets import (
-    QApplication, QMessageBox, QPushButton, QWidget
+    QApplication, QMessageBox, QWidget
 )
 from PyQt6.QtCore import Qt
 import sys

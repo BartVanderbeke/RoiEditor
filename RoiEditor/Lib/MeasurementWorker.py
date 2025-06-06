@@ -10,8 +10,6 @@ I left the (GitHub) url of the original code next to the derived code.
 
 """
 from PyQt6.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
-from PyQt6.QtWidgets import QApplication
-import sys
 
 from .RoiMeasurements import RoiMeasurements
 from .TinyLog import log
@@ -73,47 +71,3 @@ def compute_and_plot(rm: TinyRoiManager,hist_plot:HistogramFrame, msmts: RoiMeas
 
     QThreadPool.globalInstance().start(worker)
 
-if __name__ == "__main__":
-    from TinyRoiFile import TinyRoiFile
-    import StopWatch
-    from TinyRoiManager import TinyRoiManager
-    from Context import gvars
-    from Roi import Roi
-
-    app = QApplication(sys.argv)
-
-    base_name = "C_stitch_RoiSet"
-    zip_path = base_name + ".zip"
-    zip_out_path = base_name + "_OUT.zip"
-    num_threads = 12
-
-    rm = TinyRoiManager()
-    StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
-    StopWatch.stop("roi read")
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-
-    hist_plot= HistogramFrame()
-    msmts = RoiMeasurements(rm)
-    compute_and_plot(rm,hist_plot,msmts=msmts)
-    log("First round finished, waiting for updates (every 5s)")
-    import random
-
-    l=[Roi.ROI_STATE_ACTIVE,Roi.ROI_STATE_SELECTED]
-    
-    def toggle_image():
-        log("Triggering update")
-        for _,roi in rm:
-            roi.state= random.choice(l)
-        compute_and_plot(rm,hist_plot,msmts)
-
-    
-    from PyQt6.QtCore import  QTimer
-    timer = QTimer()
-    timer.timeout.connect(toggle_image)
-    timer.start(5000)  
-        
-
-    sys.exit(app.exec())

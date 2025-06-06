@@ -13,11 +13,11 @@ import sys
 import numpy as np
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTableWidget,
-    QTableWidgetItem, QSplitter, QApplication, QHeaderView
+    QTableWidgetItem, QSplitter, QHeaderView
 )
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
 
 from .Crumbs import format_float
@@ -210,41 +210,3 @@ class HistogramFrame(QWidget):
             height += self.table_widget.rowHeight(row)
         self.table_widget.setMaximumHeight(height + 4)
 
-if __name__ == "__main__":
-    from RoiMeasurements import RoiMeasurements
-    from TinyRoiFile import TinyRoiFile
-    import StopWatch
-    from TinyRoiManager import TinyRoiManager
-    from Roi import Roi
-
-    app = QApplication(sys.argv)
-    
-    base_name="./TestData/A_stitch_RoiSet"
-    zip_path = base_name+".zip"
-    zip_out_path = base_name+"_OUT.zip"
-    num_threads = 12
-
-    rm = TinyRoiManager()
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-    rm.force_feret()
-    
-    # fills the subset 'ALL'
-    msmts = RoiMeasurements(rm)
-
-    subset_name="DELETED"
-    deleted_filter = lambda roi: (roi.state==Roi.ROI_STATE_DELETED) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=deleted_filter)
-    msmts.compute_stats_subset(subset_name)
-
-    subset_name="ACTIVE"
-    active_filter = lambda roi: (roi.state==Roi.ROI_STATE_ACTIVE) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=active_filter)
-    msmts.compute_stats_subset(subset_name)
-  
-    demo = HistogramFrame()
-    demo.populate(msmts.measurement_names, "Area", msmts)
-    demo.show()
-    sys.exit(app.exec())

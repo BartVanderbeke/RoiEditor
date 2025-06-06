@@ -123,13 +123,6 @@ def dict_to_pretty_json(data):
     """Converts a dictionary to a well-formatted JSON-string."""
     return json.dumps(data, indent=4, ensure_ascii=False)
 
-if __name__ == "__main__":
-    tiff_path = "./TestData/C_stitch.tiff"
-    meta_data = read_ome_metadata(tiff_path)
-    json_text= dict_to_pretty_json(meta_data)
-    print (json_text)
 
-    info_dict = retrieve_image_info(meta_data)
-    print(info_dict["as_string"])
 
 

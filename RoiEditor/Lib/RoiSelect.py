@@ -16,8 +16,6 @@ from .TinyRoiManager import TinyRoiManager
 from .TinyLog import log
 
 
-
-
 def select_outer_rois_vdb(rm: TinyRoiManager, step: int = 10):
     """
         selects the outer edge of the cloud of ROIs by binning them
@@ -49,7 +47,7 @@ def select_outer_rois_vdb(rm: TinyRoiManager, step: int = 10):
         if r > furthest_in_bin[theta_bin_deg][0]:
             furthest_in_bin[theta_bin_deg] = (r, roi)
 
-    to_be_selected_rois = {roi for r, roi in furthest_in_bin if roi is not None}
+    to_be_selected_rois = list({roi for r, roi in furthest_in_bin if roi is not None})
     rm.select(to_be_selected_rois, reason_of_selection="edge.section", additive=True)
     log(f"Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.")
 
@@ -99,7 +97,7 @@ def select_outer_rois_vdb3(rm: TinyRoiManager, step: int = 10):
         if r > furthest_in_bin[theta_bin_deg][0]:
             furthest_in_bin[theta_bin_deg] = (r, roi)
 
-    to_be_selected_rois = {roi for r, roi in furthest_in_bin if roi is not None}
+    to_be_selected_rois = list({roi for r, roi in furthest_in_bin if roi is not None})
     rm.select(to_be_selected_rois, reason_of_selection="edge.section", additive=True)
     log(f"Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.")
 
@@ -140,7 +138,7 @@ def select_outer_rois_vdb4(rm: TinyRoiManager, step: int = 10):
         if r > furthest_in_bin[theta_bin_deg][0]:
             furthest_in_bin[theta_bin_deg] = (r, roi)
 
-    to_be_selected_rois = {roi for r, roi in furthest_in_bin if roi is not None}
+    to_be_selected_rois = list({roi for r, roi in furthest_in_bin if roi is not None})
     rm.select(to_be_selected_rois, reason_of_selection="edge.section", additive=True)
     log(f"select_outer_rois_vdb4: Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.")
 
@@ -161,7 +159,7 @@ def select_outer_rois_vdb5(rm: TinyRoiManager, filtered_label_image: np.ndarray)
     # Step 3: outer contour of all ROis
     contours, _ = cv2.findContours(closed_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     outer_mask = np.zeros_like(closed_mask)
-    cv2.drawContours(outer_mask, contours, -1, 255, thickness=10)
+    cv2.drawContours(image=outer_mask, contours=contours, contourIdx=-1, color=255, thickness=10)
 
     # Step 4: get the label values for labels intersecting with contour
     roi_labels_on_edge = np.unique(filtered_label_image[outer_mask > 0])
@@ -183,74 +181,3 @@ def select_outer_rois_vdb5(rm: TinyRoiManager, filtered_label_image: np.ndarray)
     # Step 6: select ROIs
     rm.select(selected_rois, reason_of_selection="edge.outer", additive=True)
     log(f"Selected {len(selected_rois)} ROIs from outer contour.")
-
-
-if __name__ == "__main__":
-    import sys
-    from PyQt6.QtWidgets import QApplication
-    from Roi import Roi
-    from Context import key_to_label_map
-    from Workbench import Workbench
-    import StopWatch
-
-    app = QApplication(sys.argv)
-    rm = TinyRoiManager()
-
-
-    gvars = {
-        "show_names": True,
-        "show_deleted": True,
-    }
-
-    # Padvariabelen
-    # original_file = "A_stitch.tiff"
-    # label_file = "A_stitch_label.png"
-    # roi_file = None
-    original_file = "A_stitch.tiff"
-    label_file = "A_stitch_label.png"
-    roi_file = None
-    title = "set the scene"
-    
-    title = "select outer edge"
-    
-    from PyQt6.QtWidgets import QGraphicsTextItem
-
-    _ = QGraphicsTextItem("init")  
-
-    # bench = Workbench(original_file, label_file, roi_file, key_to_label_map)
-    # window=bench.build()
-
-    # select_outer_rois_vdb(rm, step =1)
-    
-    # window.draw_image()
-
-    # bench2 = Workbench(original_file, label_file, roi_file, key_to_label_map)
-    # window2=bench2.build()
-
-    # rm.unselect_all()
-    # select_outer_rois_vdb3(rm, step = 1)
-    
-    # window2.draw_image()
-
-
-
-    # bench3 = Workbench(original_file, label_file, roi_file, key_to_label_map)
-    # window3=bench3.build()
-
-    # rm.unselect_all()
-    # select_outer_rois_vdb4(rm, step = 1)
-    
-    # window3.draw_image()
-
-    #rm.unselect_all()
-
-    import cv2
-    bench5 = Workbench(original_file, label_file, roi_file, key_to_label_map)
-    window5=bench5.build()
-    label_image = cv2.imread(label_file,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("detect edge")
-    select_outer_rois_vdb5(rm,label_image)
-    StopWatch.stop("detect edge")
-    window5.draw_image()
-
-    sys.exit(app.exec())

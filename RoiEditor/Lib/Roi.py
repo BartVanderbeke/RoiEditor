@@ -16,7 +16,7 @@ import numpy.typing as npt
 import warnings
 warnings.simplefilter("error")
 
-from .Feret import *
+from .Feret import get_values
 
 class Roi:
     ROI_STATE_ACTIVE = 0
@@ -85,7 +85,7 @@ class Roi:
     @property
     def feret_values(self):
         if not hasattr(self, '_feret_values') or self._feret_values is None:
-            self._feret_values = Feret.get_values(self.xpoints, self.ypoints)
+            self._feret_values = get_values(self.xpoints, self.ypoints)
         return self._feret_values
 
     @feret_values.setter

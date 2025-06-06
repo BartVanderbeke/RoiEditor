@@ -248,7 +248,7 @@ class TinyRoiManager(QObject):
         return None
 
     def iter_rois_or_names(self, rois_or_names):
-        if not isinstance(rois_or_names, (list, set,np.ndarray, tuple)):
+        if not isinstance(rois_or_names, (list, np.ndarray, tuple)):
             rois_or_names = np.array([rois_or_names])
         if not len(rois_or_names)>0:
             return None
@@ -289,101 +289,4 @@ class TinyRoiManager(QObject):
     
     def name_to_idx(name: str) -> int:
         return int(name[1:])
-
-if __name__ == "__main__":
-    from TinyRoiFile import TinyRoiFile
-    import StopWatch
-    base_name="./TestData/A_Stitch_RoiSet"
-    zip_path = base_name+".zip"
-    zip_out_path = base_name+"_OUT.zip"
-    num_threads = 12
-    num_feret_threads =1
-    rm = TinyRoiManager()
-    StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
-    StopWatch.stop("roi read")
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
-
-    StopWatch.start("starting roi write")
-    roi_array = [None] + [roi for _, roi in rm.iter_all()]
-    TinyRoiFile.write_parallel(zip_out_path, roi_list=roi_array, num_threads=num_threads)
-    StopWatch.stop("roi write")
-
-    StopWatch.start("starting roi read & add 2")
-    rois = TinyRoiFile.read_parallel(zip_out_path, num_threads=num_threads)
-    StopWatch.stop("roi read")
-
-    rm=TinyRoiManager()
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
-
-
-    last_3 = rois[-3:]
-    for roi in last_3:
-        if roi:
-            (top, left, bottom, right)= roi.bounds
-            print(f"{roi.name}: {roi.n} points, bounds=({left},{top}) to ({right},{bottom})")
-
-    print("**** second round")
-    base_name="./TestData/C_stitch_roiset"
-    zip_path = base_name+".zip"
-    zip_out_path = base_name+"_OUT.zip"
-    num_threads = 12
-
-    rm = TinyRoiManager()
-    StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
-    print(f"num of rois: {len(rois)}")
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-    StopWatch.stop("roi read & add 1")
-
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
-
-
-    StopWatch.start("starting roi write")
-    roi_array = [None] + [roi for _, roi in rm.iter_all()]
-    TinyRoiFile.write_parallel(zip_out_path, roi_list=roi_array, num_threads=num_threads)
-    StopWatch.stop("roi write")
-
-    StopWatch.start("starting roi read 2")
-    rois = TinyRoiFile.read_parallel(zip_out_path, num_threads=num_threads)
-    StopWatch.stop("roi read")
-
-    rm = TinyRoiManager()
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-
-
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
-
-
-    last_3 = rois[-3:]
-    for roi in last_3:
-        if roi:
-            (top, left, bottom, right)= roi.bounds
-            print(f"{roi.name}: {roi.n} points, bounds=({left},{top}) to ({right},{bottom})")
-    # ns =[]
-    # for roi in rois:
-    #     if roi:
-    #         print(roi.n,end=",")
-    #         ns.append(roi.n)
-    # print("")
-    # print(np.mean(ns))
+    

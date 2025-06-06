@@ -19,9 +19,12 @@ class StopWatch:
     def start(message=""):
         if StopWatch.start_time is not None:
             log("StopWatch already running", type="warning")
-        start_time = time.perf_counter()
+            return
+
+        StopWatch.start_time = time.perf_counter()
         if message:
             log(message)
+            
     @staticmethod
     def stop(message=""):
 

@@ -11,11 +11,11 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import numpy as np
 import cv2
-import matplotlib.pyplot as plt
 
 from .Roi import Roi
 from .StopWatch import *
 from .TinyRoiManager import TinyRoiManager
+from .TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),
@@ -79,15 +79,15 @@ def process_label_image(rm: TinyRoiManager, data: dict, remove_edges: bool = Tru
         #coords = centroid + s * (coords - centroid)
         contour = coords.reshape(-1, 1, 2).astype(np.float32)
 
-        xpoints = np.array(coords[:, 0])
-        ypoints = np.array(coords[:, 1])
+        xpoints = np.array(coords[:, 0],dtype=np.int_)
+        ypoints = np.array(coords[:, 1],dtype=np.int_)
         n = len(xpoints)
 
         label_value = masks[cy,cx]
         if label_value ==0:
             continue
         if coords.ndim != 2 or len(coords) < 3:
-            print(f"Contour is no polygon for {str(label_value)} : ndim= {coords.ndim}, #coords= {len(coords)}, #contours={len(contours)}",type="warning")
+            log(f"Contour is no polygon for {str(label_value)} : ndim= {coords.ndim}, #coords= {len(coords)}, #contours={len(contours)}",type="warning")
             continue
 
         left, top, w, h = cv2.boundingRect(contour)
@@ -116,24 +116,3 @@ def process_label_image(rm: TinyRoiManager, data: dict, remove_edges: bool = Tru
         roi_array[label_value]=roi
     rm.add_from_list_unchecked(roi_array)
 
-
-if __name__ == "__main__":
-    npy_path = './Data/A_stitch_seg.npy'
-    import StopWatch
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-
-    rm=TinyRoiManager()
-
-    data = np.load(npy_path, allow_pickle=True).item()
-    StopWatch.start("starting numpy read")
-    process_label_image(rm, data, remove_edges=True, remove_small=True, size_threshold= 100)
-    StopWatch.stop("numpy read")
-    rois = np.array(list(rm.iter_all()))
-    print(f"num_of_rois read: {len(rois)}")
-    last_3 = rois[-3:]
-    for _, roi in last_3:
-        if roi:
-            print(f"{roi.name}: {roi.n} points, bounds={roi.bounds}")
