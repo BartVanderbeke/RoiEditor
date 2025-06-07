@@ -25,7 +25,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [4/4] Python 3.11.0 installed successfully and is available in PATH
+echo [4/4] Python 3.11.0 installed successfully and added to PATH
 python --version
 
 echo Done.
