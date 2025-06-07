@@ -21,3 +21,5 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - When the image overlay is activated, a color range from green to red indicates the distance from the median for the selected measurement for each individual ROI.
 - The measurements and statistics can be written to both and .xlsx and a .csv file.
 - The ROI data is backed up every 15 minutes.
+- installers for RoiEditor, cellpose and Python are added as .bat files for installation on Windows.
+- When installed using the .bat files, desktop icons/shortcuts are created for RoiEditor and cellpose.
