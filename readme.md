@@ -23,3 +23,6 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - The ROI data is backed up every 15 minutes.
 - Installers for RoiEditor, cellpose and Python are added as .bat files for installation on Windows.
 - When installed using the .bat files, desktop icons/shortcuts are created for RoiEditor and cellpose.
+
+## 🙏 Acknowledgement
+The team of prof Katrien Koppo @ Katholieke Universiteit Leuven kindly granted the use of the sample images in the TestData folder.
