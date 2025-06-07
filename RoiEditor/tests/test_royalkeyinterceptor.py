@@ -4,7 +4,7 @@ import sys
 from PyQt6.QtWidgets import QApplication, QLabel,QMainWindow
 from PyQt6.QtCore import Qt
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 
 from RoiEditor.Lib.RoyalKeyInterceptor import RoyalKeyInterceptor
@@ -13,6 +13,7 @@ from RoiEditor.Lib.RoyalKeyInterceptor import RoyalKeyInterceptor
 def test_keyinterceptor():
 
     app = QApplication([])
+    app.setQuitOnLastWindowClosed(True)
 
     # 👑 A noble window
     window = QMainWindow()

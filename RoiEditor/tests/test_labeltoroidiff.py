@@ -8,7 +8,7 @@ from skimage.io import imread
 import matplotlib.pyplot as plt
 import math
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
 from RoiEditor.Lib.LabelToRoiDiff import process_label_image

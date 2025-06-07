@@ -2,13 +2,14 @@ import os
 import sys
 from PyQt6.QtWidgets import QApplication,QWidget
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.Stylesheet import overall
 from RoiEditor.Lib.FileDialog import FileDialog
 
 def test_dialog():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
     w = QWidget()
     w.setStyleSheet(overall)
     

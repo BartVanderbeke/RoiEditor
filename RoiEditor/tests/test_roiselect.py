@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QGraphicsTextItem
 import cv2
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
 from RoiEditor.Lib.StopWatch import StopWatch
@@ -19,18 +19,13 @@ def test_roiselect():
     test_path = os.path.join(base_path, "TestData")+'/'
 
     app = QApplication(sys.argv)
-    #rm = TinyRoiManager()
-
+    app.setQuitOnLastWindowClosed(True)
 
     gvars = {
         "show_names": True,
         "show_deleted": True,
     }
 
-    # Padvariabelen
-    # original_file = "A_stitch.tiff"
-    # label_file = "A_stitch_label.png"
-    # roi_file = None
     original_file = test_path+"A_stitch.tiff"
     label_file = test_path+"A_stitch_cp_masks.png"
     roi_file = None

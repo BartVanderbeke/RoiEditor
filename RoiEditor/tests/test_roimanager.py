@@ -1,7 +1,9 @@
 import os
 import sys
+import numpy as np
+import cv2
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
 from RoiEditor.Lib.TinyRoiFile import TinyRoiFile as TRF
@@ -12,15 +14,17 @@ def test_roimanager():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
 
-    base_name=test_path+"A_Stitch_RoiSet"
-    zip_path = base_name+".zip"
-    zip_out_path = base_name+"_OUT.zip"
+    base_name=test_path+"A_Stitch"
+    zip_path = base_name+"_rois.zip"
+    zip_out_path = base_name+"_RoiSet.zip"
+    label_path = base_name+"_cp_masks.png"
+    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     num_threads = 12
     num_feret_threads =1
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
 
-    rois = TRF.read_parallel(zip_path, num_threads=num_threads)
+    rois = TRF.read_parallel(zip_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:
@@ -36,7 +40,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read & add 2")
-    rois = TRF.read_parallel(zip_out_path, num_threads=num_threads)
+    rois = TRF.read_parallel(zip_out_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
 
     rm=TinyRoiManager()
@@ -56,14 +60,16 @@ def test_roimanager():
             print(f"{roi.name}: {roi.n} points, bounds=({left},{top}) to ({right},{bottom})")
 
     print("**** second round")
-    base_name=test_path+"C_stitch_roiset"
-    zip_path = base_name+".zip"
-    zip_out_path = base_name+"_OUT.zip"
+    base_name=test_path+"C_stitch"
+    zip_path = base_name+"_rois.zip"
+    zip_out_path = base_name+"_RoiSet.zip"
+    label_path = base_name+"_cp_masks.png"
+    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     num_threads = 12
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TRF.read_parallel(zip_path, num_threads=num_threads)
+    rois = TRF.read_parallel(zip_path, label_image, num_threads=num_threads)
     print(f"num of rois: {len(rois)}")
     for roi in rois:
         if roi:
@@ -81,7 +87,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read 2")
-    rois = TRF.read_parallel(zip_out_path, num_threads=num_threads)
+    rois = TRF.read_parallel(zip_out_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
 
     rm = TinyRoiManager()

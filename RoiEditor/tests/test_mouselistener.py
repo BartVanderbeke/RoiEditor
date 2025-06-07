@@ -7,7 +7,7 @@ from PIL import Image
 
 import numpy as np
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.TinyLog import log
 from RoiEditor.Lib.RectangleSelectorView import RectangleSelectorView
@@ -62,15 +62,16 @@ def np_to_qimage(np_img):
 
 def test_mouselistener():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
-    # --- Laad labelbeeld (voor ROI lookup)
+
     try:
         label_array = load_grayscale_image(LABEL_IMAGE_PATH)
     except Exception as e:
         print(f"Fout bij laden labelbeeld: {e}")
         sys.exit(1)
 
-    # --- Laad echt beeld (voor display)
+
     try:
         real_image = load_grayscale_image(REAL_IMAGE_PATH)
     except Exception as e:
@@ -84,7 +85,7 @@ def test_mouselistener():
         print(f"callback triggered {str(rect)}")
 
 
-    # --- Setup gvars, roi_manager, roi_image
+
     rm = RoiManager()
 
     gvars = {
@@ -100,11 +101,11 @@ def test_mouselistener():
         log(str)
         roi_image.draw_image()
 
-    # --- Installeer muisklik-vanger
+
     mouse_listener = ROIClickListener(rm, roi_image, label_array)
     view.viewport().installEventFilter(mouse_listener)
 
-    # --- Toon in hoofdvenster
+
     window = QMainWindow()
     window.setWindowTitle("Koninklijk ROI-selectievenster")
     window.setCentralWidget(view)

@@ -4,7 +4,7 @@ import random
 from PyQt6.QtWidgets import QApplication,QWidget
 from PyQt6.QtCore import QTimer
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.Roi import Roi
 from RoiEditor.Lib.Context import key_to_label_map
@@ -13,6 +13,7 @@ from RoiEditor.Lib.Workbench import Workbench
 
 def test_workbench():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
     
     base_path = os.path.dirname(__file__)

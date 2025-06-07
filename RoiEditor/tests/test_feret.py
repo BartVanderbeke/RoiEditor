@@ -1,6 +1,8 @@
 import os
 import sys
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import numpy as np
+import cv2
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.Feret import feret_msmts,get_values,get_values2
 from RoiEditor.Lib.StopWatch import StopWatch
@@ -17,10 +19,12 @@ def test_feret():
     num_threads = 12
 
 
-    base_name = test_path+"A_Stitch_RoiSet"
-    zip_path = base_name + ".zip"
+    base_name = test_path+"A_Stitch"
+    zip_path = base_name + "_rois.zip"
+    label_path = base_name+"_cp_masks.png"
+    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
+    rois = TinyRoiFile.read_parallel(zip_path,label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
     results =[]
     print(f"#rois: {len(rois)}")
@@ -44,10 +48,12 @@ def test_feret():
 
     print(f"CSV saved to {csv_path}")
 
-    base_name = test_path+"A_Stitch_RoiSet"
-    zip_path = base_name + ".zip"
+    base_name = test_path+"A_Stitch"
+    zip_path = base_name + "_rois.zip"
+    label_path = base_name+"_cp_masks.png"
+    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
+    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
     results =[]
     print(f"#rois: {len(rois)}")

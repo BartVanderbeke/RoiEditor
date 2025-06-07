@@ -1,11 +1,13 @@
 import os
 import sys
+import numpy as np
+import cv2
 
 from PyQt6.QtCore import  QTimer
 from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication, QWidget
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.Context import gvars
 from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
@@ -18,20 +20,23 @@ from RoiEditor.Lib.TinyLog import log
 
 def test_roiimage():
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
 
     base_name = test_path+"C_stitch"
-    zip_path = base_name + "_RoiSet.zip"
+    zip_path = base_name + "_rois.zip"
     image_path= base_name + ".tiff"
+    label_path = base_name+"_cp_masks.png"
+    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     num_threads = 12
 
     background_img = QImage(image_path)
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, num_threads=num_threads)
+    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:

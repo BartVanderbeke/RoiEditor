@@ -2,7 +2,7 @@ import os
 import sys
 from PyQt6.QtWidgets import QApplication,QWidget
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from RoiEditor.Lib.MessageBoxInvalidValues import MessageBoxInvalidValues
 from RoiEditor.Lib.Stylesheet import overall
@@ -10,6 +10,7 @@ from RoiEditor.Lib.Stylesheet import overall
 def test_msgbxinvalid():
 
     app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(True)
 
     parent = QWidget()
     parent.setStyleSheet(overall)
