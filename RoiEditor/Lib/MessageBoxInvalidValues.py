@@ -35,20 +35,3 @@ class MessageBoxInvalidValues(QMessageBox):
         #self.default_button.setToolTip("Restore default values and continue")
         self.correct_button.setToolTip("Go back and edit the input values")
 
-
-def main():
-    from Stylesheet import overall
-    app = QApplication(sys.argv)
-
-    parent = QWidget()
-    parent.setStyleSheet(overall)
-
-    msgbox = MessageBoxInvalidValues(parent)
-    result = msgbox.exec()
-
-    if msgbox.clickedButton() == msgbox.correct_button:
-        print("User clicked 'Correct'")
-    else:
-        print("User did magic: this cannot happen")
-if __name__ == "__main__":
-    main()

@@ -157,21 +157,21 @@ class Workbench(QWidget):
             log(f"tiff info: {info}")
         else:
             self.tiff_info= None
+        image_size_str = f"width x height: {bkg_w} x {bkg_h} pixels"
         if self.tiff_info:
             physical_size_x = self.tiff_info["PhysicalSizeX"] # micron/pixel
             physical_size_y = self.tiff_info["PhysicalSizeY"] # micron/pixel
-            bkg_w_mm = float(bkg_w) * physical_size_x / 1000.0 # mm
-            bkg_h_mm = float(bkg_h) * physical_size_y / 1000.0 # mm
-            image_size_str = f"width x height: {bkg_w_mm:.3f} x {bkg_h_mm:.3f} millimeter"
-        else:
-            image_size_str = f"width x height: {bkg_w} x {bkg_h} pixels"
+            if physical_size_x and physical_size_y:
+                bkg_w_mm = float(bkg_w) * physical_size_x / 1000.0 # mm
+                bkg_h_mm = float(bkg_h) * physical_size_y / 1000.0 # mm
+                image_size_str = f"width x height: {bkg_w_mm:.3f} x {bkg_h_mm:.3f} millimeter"
 
 
         self.rm = TinyRoiManager(self.filtered_label_image,parent=self)
 
         if self.roi_file and not self.roi_file=="<no name>":
             log("Reading ROIs from zip")
-            roi_array = TinyRoiFile.read_parallel(zip_path=self.roi_file, num_threads=gvars["read_parallel_num_threads"])
+            roi_array = TinyRoiFile.read_parallel(zip_path=self.roi_file, label_image =self.label_image,num_threads=gvars["read_parallel_num_threads"])
             self.rm.add_from_list_unchecked(roi_array)
         else:
             log("Creating ROIs from label file")

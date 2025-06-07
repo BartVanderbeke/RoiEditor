@@ -17,6 +17,7 @@ from PyQt6.QtCore import QTimer, QPoint
 import sys
 
 from .Crumbs import normalize_path
+from .TinyLog import log
 
 class FileDialog(QFileDialog):
     def __init__(self, x=100, y=100,title: str= "",filter: str ="*.*", parent=None):
@@ -27,12 +28,6 @@ class FileDialog(QFileDialog):
         self.setViewMode(QFileDialog.ViewMode.Detail)
         self.setNameFilter(filter)
 
-        settings = QSettings("EditRois")
-        default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.HomeLocation)
-        self.last_dir = settings.value("FileLocation", default_dir)
-        self.last_dir=normalize_path(self.last_dir)
-        self.setDirectory(self.last_dir)
-
         self.target_pos = QPoint(x, y)
 
         self.move(-5000, -5000)
@@ -41,12 +36,27 @@ class FileDialog(QFileDialog):
         self.show()
         self.repaint()
 
+        self.settings = QSettings("EditRois")
+
         #self.fileSelected.connect(self._highlight_filename)
 
     def setParent(self,parent):
         super().setParent(parent)
     def setWindowFlag(self,flag):
         super().setWindowFlag(flag)
+
+    def setDirectoryfromSettings(self):
+        default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.HomeLocation)
+        start_dir = self.settings.value("FileLocation", default_dir)
+        start_dir=normalize_path(start_dir)
+        self.setDirectory(start_dir)
+
+    def writeDirectoryToSettings(self):
+        current_dir=normalize_path(self.directory().absolutePath())
+        self.settings.setValue("FileLocation", current_dir)
+    
+    def getDirectory(self):
+        return normalize_path(self.directory().absolutePath())
 
 
     def showDialog(self):

@@ -115,7 +115,7 @@ class RoiEditorControlPanel(QMainWindow):
 
 
     def on_previous(self):
-        #print("Previous clicked")
+
         self.reset_names()
         if self.workbench:
             self.clean_up()
@@ -125,7 +125,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.on_previous()
         
     def on_finish(self):
-        #print("Finish clicked")
+
         if self.workbench:
             self.clean_up()
             self.close_windows(criterion=lambda x: x is not self)
@@ -217,15 +217,15 @@ class RoiEditorControlPanel(QMainWindow):
         qlbl.setStyleSheet(self.fn_color_dict[False])
 
     def on_click_clear_original(self):
-        print("Clear original filename")
+        log("Clear original filename")
         self.reset_filename(for_which="org")
 
     def on_click_clear_label(self):
-        print("Clear label filename")
+        log("Clear label filename")
         self.reset_filename(for_which="label")
                             
     def on_click_clear_zip(self):
-        print("Clear zip filename")
+        log("Clear zip filename")
         self.reset_filename(for_which="zip")
 
     def on_click_browse_original(self):
@@ -302,14 +302,14 @@ class RoiEditorControlPanel(QMainWindow):
 
 
     def on_save_rois(self):
-        #log("Save ROIs clicked")
+
         if not self.workbench:
             log("No files opened",type="warning")
             return False
         return self.workbench.on_save_rois()
 
     def on_save_table(self):
-        #print("Save Measurements clicked")
+
         if not self.workbench:
             log("No files opened",type="warning")
             return False
@@ -381,9 +381,6 @@ class RoiEditorControlPanel(QMainWindow):
         log("Min size:", gvars["roi_minimum_size"])
         # {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}, "source": "no scaler/unit selected"},
         log(gvars["selected_unit_and_scale"])
-
-    # def on_bg_unit_toggled(self, id, checked):
-    #     print(f"Button with ID {id} is now: {checked}")
 
     def connect_all_handlers(self):
         self.cb_show_names.setChecked(gvars["show_names"])

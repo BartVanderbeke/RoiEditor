@@ -114,7 +114,7 @@ class TinyRoiFile:
         return all(TinyRoiFile._is_valid_roi_name(n) for n in entry_list)
     
     @staticmethod
-    def read_parallel(zip_path: str, num_threads: int = 4) -> List[Optional[Roi]]:
+    def read_parallel(zip_path: str, label_image,num_threads: int = 4) -> List[Optional[Roi]]:
         import io
         with  open(zip_path, "rb") as zipf:
                 zip_bytes = zipf.read()
@@ -122,7 +122,7 @@ class TinyRoiFile:
         with zipfile.ZipFile(zip_buffer, 'r') as zipf:
             name_list= zipf.namelist()
             roi_data_dict = {
-                name[:-4]: zipf.read(name)
+                name[:-4]: zipf.read(name) # drop '.roi'
                 for name in name_list
                 if name.lower().endswith('.roi')
             }
@@ -136,24 +136,24 @@ class TinyRoiFile:
 
 
         names = list(roi_data_dict.keys())
-        #roi_indices = [int(n[1:-4]) for n in names]
-        roi_indices = [int(n[1:]) for n in names]
-        max_index = np.max(roi_indices)
-        l = len(names)
-        if l != max_index:
-            log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="error")
-            full = set(range(min(roi_indices), max(roi_indices) + 1))
-            missing = sorted(full - set(roi_indices))
-            log(f"Missing labels: {missing} ",type="error")
-        num_to_use = max(max_index,l)+1
-        roi_array=np.array([None] * (num_to_use),dtype=object) #List[Optional[Roi]] = [None] * (num_to_use)
         all_l =TinyRoiFile._all_L_names(names)
-        i=0
+
         if all_l:
+            roi_indices = [int(n[1:]) for n in names]
+            max_index = np.max(roi_indices)
+            l = len(names)
+            if l != max_index:
+                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="error")
+                full = set(range(min(roi_indices), max(roi_indices) + 1))
+                missing = sorted(full - set(roi_indices))
+                log(f"Missing labels: {missing} ",type="error")
+            num_to_use = max(max_index,l)+1
+            roi_array=np.array([None] * (num_to_use),dtype=object) #List[Optional[Roi]] = [None] * (num_to_use)
+
             if has_json:
                 for roi_name in names:
                     data = roi_data_dict[roi_name]
-                    roi = TinyRoiFile._decode(data, roi_name)
+                    roi: Roi = TinyRoiFile._decode(data, roi_name)
                     idx = int(roi_name[1:]) # number
                     roi_array[idx] = roi
                     values = tag_json.get(roi_name, None)
@@ -167,13 +167,28 @@ class TinyRoiFile:
                     idx = int(roi_name[1:])
                     roi_array[idx] = roi
         else:
-            max_digits = len(str(len(names)))
-            labels = [f"L{idx+1:0{max_digits}d}" for idx in range(len(names))]
-            for idx, name in enumerate(names):
-                roi_name=labels[idx]
+            roi_dict = {}
+            for name in names:
                 data = roi_data_dict[name]
-                roi = TinyRoiFile._decode(data, roi_name)
-                roi_array[idx + 1] = roi
+                roi: Roi = TinyRoiFile._decode(data,name)
+                (cx,cy) = (roi.center)
+                idx = label_image[int(cy),int(cx)]
+                roi_dict[idx] = roi
+            kys = list(roi_dict.keys())
+            max_index = np.max(kys)
+            l = len(kys)
+            num_to_use = max(max_index,l)+1
+            max_digits = len(str(num_to_use))
+            labels = [f"L{idx:0{max_digits}d}" for idx in range(num_to_use)]
+            roi_array=np.array([None] * (num_to_use),dtype=object)
+            for idx,roi in roi_dict.items(): 
+                roi_array[idx]=roi
+                roi.name=labels[idx]
+            if l != max_index:
+                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="error")
+                full = set(range(min(kys), max_index + 1))
+                missing = sorted(full - set(kys))
+                log(f"Missing labels: {missing} ",type="error")
         return roi_array
     
     @staticmethod
@@ -194,10 +209,10 @@ class TinyRoiFile:
         x = np.frombuffer(data[HEADER_SIZE : HEADER_SIZE + 2 * n], dtype='>i2').astype(np.int32)
         y = np.frombuffer(data[HEADER_SIZE + 2 * n : HEADER_SIZE + 4 * n], dtype='>i2').astype(np.int32)
 
-        #print(np.array_equal(x1,x),np.array_equal(y1,y))
-
         xpoints = x + left
         ypoints = y + top
 
-        return Roi(xpoints, ypoints, name=name, state=Roi.ROI_STATE_ACTIVE, bounds=(top, left, bottom, right), n=n)
+        center=(np.mean(xpoints),np.mean(ypoints))
+
+        return Roi(xpoints, ypoints, name=name, state=Roi.ROI_STATE_ACTIVE, center = center, bounds=(top, left, bottom, right), n=n)
 

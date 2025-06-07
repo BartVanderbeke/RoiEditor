@@ -21,6 +21,7 @@ from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
 
 from .Crumbs import format_float
+from .TinyLog import log
 
 class ColorCycler(object):
     def __init__(self):
@@ -52,7 +53,7 @@ class HistogramFrame(QWidget):
 
     @staticmethod
     def dummy_callback(msmt_name:str):
-        print(f"Histogram dummy callback: {msmt_name} selected")
+        log(f"Histogram dummy callback: {msmt_name} selected",type="error")
 
 
     def __init__(self,on_measurement_selected: Callable[[str], None]=dummy_callback, parent=None):
@@ -61,13 +62,6 @@ class HistogramFrame(QWidget):
         self.setWindowFlag(Qt.WindowType.Window)
         self.setFixedSize(600, 600)
         self.on_measurement_selected: Callable[[str], None]=on_measurement_selected
-
-    def _on_destroyed(self, obj):
-        print("HistogramFrame is being deleted")
-
-    def closeEvent(self, event):
-        print("HistogramFrame is being closed")
-        event.accept()
 
     def populate(self, measurement_names, selected_measurement, msmts,parent=None):
         from .Stylesheet import overall

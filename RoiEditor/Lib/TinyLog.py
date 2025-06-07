@@ -88,16 +88,13 @@ class TinyLog:
         COLOR = TinyLog.TYPE_TO_COLOR.get(type, "\033[97m")
         RESET = "\033[0m"
 
-        #parts = [f"{COLOR}"]
         caller_str =""
         caller_name = inspect.stack()[2].function
         if caller_name != '<module>':  # '<module>' --> __main__
             caller_short = TinyLog.shorten(caller_name, 16)
-            #parts.append(f"[{caller_short}]")
+
             caller_str = f"[{caller_short}]"
-        #args_list = list(args)
-        #parts.append(args_list)
-        #parts.append(RESET)
+
         message = " ".join(map(str, args))  # geen sep!
         if message:
             caller_padded = caller_str.ljust(20)

@@ -71,10 +71,6 @@ class RoiMeasurements(QObject):
             return
         self.compute_stats_subset(subset_name="ALL")
 
-
-    def _on_destroyed(self, obj):
-        print("RoiMeasurements is being deleted")
-
     @classmethod
     def is_valid(cls,msmts: "RoiMeasurements"):
         return msmts is not None and msmts.data is not None and msmts.stats is not None

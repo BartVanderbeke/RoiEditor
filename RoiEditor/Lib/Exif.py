@@ -123,6 +123,3 @@ def dict_to_pretty_json(data):
     """Converts a dictionary to a well-formatted JSON-string."""
     return json.dumps(data, indent=4, ensure_ascii=False)
 
-
-
-

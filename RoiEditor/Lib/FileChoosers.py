@@ -62,8 +62,8 @@ class QOriginalFileChooser:
         self.dialog = FileDialog(x=x, y=y, title="Select original image", filter=name_filter, parent=self.parent)
 
     def showDialog(self):
-        self.dialog.setDirectory(self.dialog.last_dir)
-        settings = QSettings("EditRois")
+        self.dialog.setDirectoryfromSettings()
+        log(f"Label start folder: {self.dialog.getDirectory()}")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()
@@ -71,9 +71,7 @@ class QOriginalFileChooser:
                 if len(selected_files) > 2:
                     log("Trimming number of selected files to 2", type="warning")
                 selected_files = sorted(selected_files, key=lambda f: len(os.path.basename(f)))[:2]
-                remember = normalize_path(os.path.dirname(selected_files[0]))
-                settings.setValue("FileLocation", remember)
-
+                self.dialog.writeDirectoryToSettings()
                 hint = selected_files[1] if len(selected_files) > 1 else None
                 return selected_files[0], hint
 
@@ -94,11 +92,10 @@ class QLabelFileChooser:
         _hint=hint or self.hint
         if _hint:
             start_dir= normalize_path(os.path.dirname(_hint)) # dirname strips of trailing (back)slash
+            self.dialog.setDirectory(start_dir)
         else:
-            start_dir = self.dialog.last_dir
-
-        self.dialog.setDirectory(start_dir)
-        print(f"Label: {start_dir}")
+            self.dialog.setDirectoryfromSettings()
+        log(f"Label start folder: {self.dialog.getDirectory()}")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()
@@ -126,8 +123,8 @@ class QRoiFileChooser:
 
 
     def showDialog(self):
-        self.dialog.setDirectory(self.dialog.last_dir)
-        print(f"Roi: {self.dialog.last_dir}")
+        self.dialog.setDirectoryfromSettings()
+        log(f"Roi start folder: {self.dialog.getDirectory()}")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()

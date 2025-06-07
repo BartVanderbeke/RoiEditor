@@ -58,14 +58,6 @@ class RoiImageWindow(QMainWindow):
     def dummy_callback(self,str):
         log(f"RoiImageWindow: No callback connected: {str}")
 
-    def _on_destroyed(self, obj):
-        print("RoiImageWindow is being deleted")
-
-
-    # def closeEvent(self, event):
-    #     print("RoiImageWindow is being closed")
-    #     #event.accept()
-
     def zoom_to_str(self) -> str:
         return f"{int(self._zoom*100.0)}%"
 

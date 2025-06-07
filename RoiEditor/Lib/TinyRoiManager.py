@@ -39,20 +39,8 @@ class TinyRoiManager(QObject):
     def __init__(self, filtered_label_image: np.ndarray=None,parent=None):
         super().__init__(parent=parent)
         self._name_to_roi: dict[str, Roi] = {}
-        #self._lock = threading.Lock()
-        #self._counter = 0
         self.filtered_label_image=filtered_label_image
         self._use_label_image: bool= self.filtered_label_image is not None
-
-    def _on_destroyed(self, obj):
-        print("Roi manager is being deleted")
-
-    # def reset(self,filtered_label_image: np.ndarray=None):
-    #     self._name_to_roi.clear()
-    #     self.filtered_label_image=filtered_label_image
-
-    # def attach(self,filtered_label_image: np.ndarray):
-    #     self.filtered_label_image=filtered_label_image
 
     @classmethod
     def is_valid(cls,rm: "TinyRoiManager"):
