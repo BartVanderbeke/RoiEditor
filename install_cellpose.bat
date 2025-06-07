@@ -2,11 +2,18 @@
 setlocal
 
 echo [1/3] Searching for python.exe
-for /f "delims=" %%P in ('where python 2^>nul') do set "PY_PATH=%%P"
+set "PY_PATH="
+for /f "delims=" %%P in ('where python 2^>nul') do (
+    set "PY_PATH=%%P"
+    goto :found_python
+)
+
+:found_python
 if not defined PY_PATH (
     echo [ERROR] Python was not found. Please install Python and try again.
     exit /b 1
 )
+
 echo [OK] Python found: %PY_PATH%
 
 echo.
@@ -29,14 +36,17 @@ powershell -NoProfile -Command ^
  "$s.IconLocation = '%~dp0cellpose.ico'; " ^
  "$s.Save()"
 
-if exist "%USERPROFILE%\Desktop\cellpose.lnk" (
-    echo [OK] Shortcut for cellpose created on desktop
+for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"') do (
+    set "REAL_DESKTOP=%%D"
+)
+
+if exist "%REAL_DESKTOP%\cellpose.lnk" (
+    echo [OK] Shortcut found at %REAL_DESKTOP%
 ) else (
-    echo [WARNING] Shortcut could not be created.
-	exit /b 1
+    echo [WARNING] Shortcut not found on desktop.
 )
 
 echo.
-echo Done! You can now start Cellpose via the shortcut on your desktop
+echo [3/3] Done! You can now start Cellpose using the shortcut on your desktop
 endlocal
 exit /b 0

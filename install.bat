@@ -1,13 +1,18 @@
 @echo off
-echo Starting the installation of RoiEditor
+echo [1/3] Starting the installation of RoiEditor
 cd /d "%~dp0"
 python -m pip install -e . || goto :error
-echo Finished the installation of RoiEditor
-echo Creating RoiEditor shortcut on desktop
-for /f "usebackq delims=" %%I in (`where pythonw.exe`) do set "PYW_PATH=%%I"
+echo [1/3] Finished the installation of RoiEditor
+echo [2/3] Creating RoiEditor shortcut on desktop
+set "PYW_PATH="
+for /f "delims=" %%P in ('where pythonw 2^>nul') do (
+    set "PYW_PATH=%%P"
+    goto :found_pythonw
+)
 
+:found_pythonw
 if not defined PYW_PATH (
-    echo pythonw.exe not found, no shortcut created for RoiEditor
+    echo [ERROR] Pythonw was not found. Please install Pythonw and try again
     exit /b 1
 )
 
@@ -18,17 +23,29 @@ powershell -NoProfile -Command ^
  "$s.WorkingDirectory = '%~dp0'; " ^
  "$s.IconLocation = '%~dp0RoiEditor.ico'; " ^
  "$s.Save()"
-echo Created RoiEditor shortcut on desktop
-echo Creating cellpose shortcut on desktop
-for /f "usebackq delims=" %%I in (`where python.exe`) do set "PY_PATH=%%I"
-
+echo [2/3] Created RoiEditor shortcut on desktop
+set "PY_PATH="
+for /f "delims=" %%P in ('where python 2^>nul') do (
+    set "PY_PATH=%%P"
+    goto :found_python
+)
+:found_python
 if not defined PY_PATH (
-    echo python.exe not found, no shortcut created for cellpose
+    echo [ERROR] Python was not found. Please install Python and try again
     exit /b 1
 )
 
 where cellpose >nul 2>&1 || (echo cellpose is not yet installed && exit /b 1)
-if exist "%USERPROFILE%\Desktop\cellpose.lnk" (echo cellpose shortcut already on desktop && exit /b 0)
+for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"') do (
+    set "REAL_DESKTOP=%%D"
+)
+
+if exist "%REAL_DESKTOP%\cellpose.lnk" (
+    echo [OK] Shortcut to cellpose already exists
+    exit /b 0
+) else (
+    echo [INFO] Shortcut not found on desktop, will attempt to create one
+)
 
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'cellpose.lnk')); " ^
@@ -37,11 +54,11 @@ powershell -NoProfile -Command ^
  "$s.WorkingDirectory = '%~dp0'; " ^
  "$s.IconLocation = '%~dp0cellpose.ico'; " ^
  "$s.Save()"
-echo Created cellpose shortcut on desktop
+echo [3/3] Created cellpose shortcut on desktop
 cmd /k
 exit /b
 
 :error
 echo.
-echo Installation of RoiEditor failed!
+echo [ERROR] Installation of RoiEditor failed!
 exit /b
