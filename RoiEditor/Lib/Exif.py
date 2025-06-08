@@ -9,8 +9,9 @@ When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
 """
-from xml.etree import ElementTree as ET
 from tifffile import TiffFile
+from lxml import etree as ET
+from tifffile import TiffFile, TiffWriter
 import json
 
 def read_ome_metadata(tiff_path):
@@ -36,7 +37,8 @@ def read_ome_metadata(tiff_path):
 
 
 def parse_ome_xml(xml_string):
-    root = ET.fromstring(xml_string)
+    parser = ET.XMLParser(remove_blank_text=True)
+    root = ET.fromstring(xml_string.encode('utf-8'), parser)
 
     def parse_element(elem):
         data = {}
@@ -44,7 +46,7 @@ def parse_ome_xml(xml_string):
         if elem.text and elem.text.strip():
             data['text'] = elem.text.strip()
         for child in elem:
-            tag = child.tag.split('}')[-1]
+            tag = str(child.tag).split('}')[-1]  # extra safety
             child_data = parse_element(child)
             if tag not in data:
                 data[tag] = child_data
@@ -55,6 +57,7 @@ def parse_ome_xml(xml_string):
         return data
 
     return parse_element(root)
+
 
 def parse_description_text(description_text):
     result = {}
@@ -122,4 +125,50 @@ def retrieve_tiff_image_info(tiff_path):
 def dict_to_pretty_json(data):
     """Converts a dictionary to a well-formatted JSON-string."""
     return json.dumps(data, indent=4, ensure_ascii=False)
+
+def update_ome_metadata_from_json(json_data, tiff_path, output_path):
+    with TiffFile(tiff_path) as tif:
+        image=tif.pages[0].asarray()
+        xml_string = tif.pages[0].description
+        metadata = tif.ome_metadata
+        if not xml_string or not (xml_string.strip().startswith('<?xml') or xml_string.strip().startswith('<OME')):
+            raise ValueError("TIFF contains no (valid) OME-XML")
+
+    parser = ET.XMLParser(remove_blank_text=True)
+    root = ET.fromstring(xml_string.encode('utf-8'), parser)
+
+    def update_element(elem, updates):
+        for key, value in updates.items():
+            if key == "text":
+                elem.text = str(value)
+            elif isinstance(value, dict):
+                child = elem.find(f"./{{*}}{key}")
+                if child is not None:
+                    update_element(child, value)
+                else:
+                    new_child = ET.SubElement(elem, key)
+                    update_element(new_child, value)
+            elif isinstance(value, list):
+                children = elem.findall(f"./{{*}}{key}")
+                for i, item in enumerate(value):
+                    if i < len(children):
+                        update_element(children[i], item)
+                    else:
+                        new_child = ET.SubElement(elem, key)
+                        update_element(new_child, item)
+            else:
+                elem.set(key, str(value))
+
+    update_element(root, json_data)
+
+
+    new_description = ET.tostring(root, encoding='utf-8', xml_declaration=True, pretty_print=True).decode('utf-8')
+    #print(new_description)
+
+    with TiffWriter(output_path, bigtiff=None) as out:
+        out.write(
+            image,
+            description=new_description,
+            metadata=None 
+        )
 
