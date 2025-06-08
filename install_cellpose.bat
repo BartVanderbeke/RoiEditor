@@ -19,7 +19,7 @@ echo [OK] Python found: %PY_PATH%
 echo.
 echo [2/3] Installing cellpose
 "%PY_PATH%" -m pip install --upgrade pip >nul 2>&1
-"%PY_PATH%" -m pip install cellpose
+"%PY_PATH%" -m pip install cellpose[gui]
 if errorlevel 1 (
     echo [ERROR] Failed to install Cellpose.
     exit /b 1
