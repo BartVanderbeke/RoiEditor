@@ -13,11 +13,16 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - Contrary to most ROI-handling apps or plug ins, RoiEditor never removes ROIs from the collection:
   Deleted ROIs are marked, but not removed.
 - The state data and other metadata is stored in a json file in the ROI zip file.
-- The scaling of the image μm/pixel can be read from the original tif(f) file or set manually.
+- The scaling of the image (μm/pixel) can be read from the original tif(f) file or set manually.
 - Area & Feret measurements are computed for all ROIs.
-- The stats for each measurement are shown in in histogram window
+- The stats for each measurement are shown in a histogram window.
 - The user can select the edge of the ROI-cloud or the outliers for each measurement for deletion.
 - An outlier for a measurement is a value deviating more than 1.5 * IQR from the median.
 - When the image overlay is activated, a color range from green to red indicates the distance from the median for the selected measurement for each individual ROI.
 - The measurements and statistics can be written to both and .xlsx and a .csv file.
 - The ROI data is backed up every 15 minutes.
+- Installers for RoiEditor, cellpose and Python are added as .bat files for installation on Windows.
+- When installed using the .bat files, desktop icons/shortcuts are created for RoiEditor and cellpose.
+
+## 🙏 Acknowledgement
+The team of prof Katrien Koppo @ Katholieke Universiteit Leuven kindly granted the use of the sample images in the TestData folder.
