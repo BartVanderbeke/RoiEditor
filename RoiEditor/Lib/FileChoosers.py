@@ -27,7 +27,7 @@ def find_related_filenames(reference_filepath: str):
     
     # valid name-endings for label and ROI/zip files
     label_suffixes = ['_seg.npy', '_label.png', '_label.tif', '_label.tiff', '_label.jpg', '_cp_masks.png']
-    zip_suffixes = ['_roiset.zip','_rois.zip'] # order indivates the preference
+    zip_suffixes = ['_roiset.zip','_rois.zip'] # order indicates the preference
 
     label_file = None
     zip_file = None
@@ -49,7 +49,8 @@ def find_related_filenames(reference_filepath: str):
     def preferred_zip_file(candidates, suffixes):
         for suffix in suffixes:
             for f in candidates:
-                if f.endswith(suffix):
+                fn =f.lower()
+                if fn.endswith(suffix):
                     return f
         return None
 
