@@ -27,7 +27,7 @@ def find_related_filenames(reference_filepath: str):
     
     # valid name-endings for label and ROI/zip files
     label_suffixes = ['_seg.npy', '_label.png', '_label.tif', '_label.tiff', '_label.jpg', '_cp_masks.png']
-    zip_suffixes = ['_rois.zip', '_roiset.zip']
+    zip_suffixes = ['_roiset.zip','_rois.zip'] # order indivates the preference
 
     label_file = None
     zip_file = None
@@ -45,7 +45,16 @@ def find_related_filenames(reference_filepath: str):
 
     # Select shortest valid name from the list of selected files
     label_file = min(label_candidates, key=len) if label_candidates else None
-    zip_file = min(zip_candidates, key=len) if zip_candidates else None
+
+    def preferred_zip_file(candidates, suffixes):
+        for suffix in suffixes:
+            for f in candidates:
+                if f.endswith(suffix):
+                    return f
+        return None
+
+    # Select using the preference as set in 'zip_suffixes'
+    zip_file = preferred_zip_file(zip_candidates, zip_suffixes)
 
     return (
         os.path.join(folder, label_file) if label_file else None,

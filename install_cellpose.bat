@@ -28,12 +28,14 @@ echo [OK] cellpose successfully installed
 
 echo.
 echo [3/3] Creating desktop shortcut for cellpose
+set "ICO=%~dp0assets\cellpose.ico"
+echo %ICO%
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'cellpose.lnk')); " ^
  "$s.TargetPath = '%PY_PATH%'; " ^
  "$s.Arguments = '-m cellpose'; " ^
  "$s.WorkingDirectory = '%~dp0'; " ^
- "$s.IconLocation = '%~dp0cellpose.ico'; " ^
+ "$s.IconLocation = '%ICO%'; " ^
  "$s.Save()"
 
 for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"') do (

@@ -21,7 +21,7 @@ from RoiEditor.Lib.TinyLog import log
 from RoiEditor.Lib.LogWindow import StdoutRedirector, LogWindow
 from RoiEditor.Lib.Stylesheet import overall
 from RoiEditor.Lib.RoiEditorControlPanel import RoiEditorControlPanel
-""" the class hierachy of RoiEditor is explained in RoiEditorControlPanel """
+""" the class hierarchy of RoiEditor is explained in RoiEditorControlPanel """
 """ RoiEditorControlPanel is the top level (window/widget) class"""
 
 import warnings

@@ -26,3 +26,7 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 
 ## 🙏 Acknowledgement
 The team of prof Katrien Koppo @ Katholieke Universiteit Leuven kindly granted the use of the sample images in the TestData folder.
+
+## ✨ Workflow
+The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
+<img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="400"/>

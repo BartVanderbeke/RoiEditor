@@ -21,7 +21,7 @@ powershell -NoProfile -Command ^
  "$s.TargetPath = '%PYW_PATH%'; " ^
  "$s.Arguments = '-m RoiEditor'; " ^
  "$s.WorkingDirectory = '%~dp0'; " ^
- "$s.IconLocation = '%~dp0RoiEditor.ico'; " ^
+ "$s.IconLocation = '%~dp0assets\RoiEditor.ico'; " ^
  "$s.Save()"
 echo [2/3] Created RoiEditor shortcut on desktop
 set "PY_PATH="
@@ -52,7 +52,7 @@ powershell -NoProfile -Command ^
  "$s.TargetPath = '%PY_PATH%'; " ^
  "$s.Arguments = '-m cellpose'; " ^
  "$s.WorkingDirectory = '%~dp0'; " ^
- "$s.IconLocation = '%~dp0cellpose.ico'; " ^
+ "$s.IconLocation = '%~dp0assets\cellpose.ico'; " ^
  "$s.Save()"
 echo [3/3] Created cellpose shortcut on desktop
 cmd /k
