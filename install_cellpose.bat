@@ -18,8 +18,8 @@ echo [OK] Python found: %PY_PATH%
 
 echo.
 echo [2/3] Installing cellpose
-"%PY_PATH%" -m pip install --upgrade pip >nul 2>&1
-"%PY_PATH%" -m pip install cellpose[gui]
+python -m pip install --upgrade pip >nul 2>&1
+python -m pip install cellpose[gui]
 if errorlevel 1 (
     echo [ERROR] Failed to install Cellpose.
     exit /b 1
@@ -29,12 +29,11 @@ echo [OK] cellpose successfully installed
 echo.
 echo [3/3] Creating desktop shortcut for cellpose
 set "ICO=%~dp0assets\cellpose.ico"
-echo %ICO%
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'cellpose.lnk')); " ^
- "$s.TargetPath = '%PY_PATH%'; " ^
+ "$s.TargetPath = 'python.exe'; " ^
  "$s.Arguments = '-m cellpose'; " ^
- "$s.WorkingDirectory = '%~dp0'; " ^
+ "$s.WorkingDirectory = $env:USERPROFILE; " ^
  "$s.IconLocation = '%ICO%'; " ^
  "$s.Save()"
 
@@ -43,7 +42,7 @@ for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFold
 )
 
 if exist "%REAL_DESKTOP%\cellpose.lnk" (
-    echo [OK] Shortcut found at %REAL_DESKTOP%
+    echo [OK] Shortcut found on %REAL_DESKTOP%
 ) else (
     echo [WARNING] Shortcut not found on desktop.
 )

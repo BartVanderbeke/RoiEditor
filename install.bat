@@ -18,9 +18,9 @@ if not defined PYW_PATH (
 
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'RoiEditor.lnk')); " ^
- "$s.TargetPath = '%PYW_PATH%'; " ^
+ "$s.TargetPath = 'pythonw.exe'; " ^
  "$s.Arguments = '-m RoiEditor'; " ^
- "$s.WorkingDirectory = '%~dp0'; " ^
+ "$s.WorkingDirectory = $env:USERPROFILE; " ^
  "$s.IconLocation = '%~dp0assets\RoiEditor.ico'; " ^
  "$s.Save()"
 echo [2/3] Created RoiEditor shortcut on desktop
@@ -35,23 +35,23 @@ if not defined PY_PATH (
     exit /b 1
 )
 
-where cellpose >nul 2>&1 || (echo cellpose is not yet installed && exit /b 1)
+where cellpose >nul 2>&1 || (echo [WARNING] cellpose is not yet installed && exit /b 1)
 for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFolderPath('Desktop')"') do (
     set "REAL_DESKTOP=%%D"
 )
 
 if exist "%REAL_DESKTOP%\cellpose.lnk" (
-    echo [OK] Shortcut to cellpose already exists
+    echo [3/3] [OK] Shortcut to cellpose already exists
     exit /b 0
 ) else (
-    echo [INFO] Shortcut not found on desktop, will attempt to create one
+    echo [3/3] [INFO] Shortcut not found on desktop, will attempt to create one
 )
 
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'cellpose.lnk')); " ^
- "$s.TargetPath = '%PY_PATH%'; " ^
+ "$s.TargetPath = 'python.exe'; " ^
  "$s.Arguments = '-m cellpose'; " ^
- "$s.WorkingDirectory = '%~dp0'; " ^
+ "$s.WorkingDirectory = $env:USERPROFILE; " ^
  "$s.IconLocation = '%~dp0assets\cellpose.ico'; " ^
  "$s.Save()"
 echo [3/3] Created cellpose shortcut on desktop
