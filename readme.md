@@ -25,7 +25,7 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - When installed using the .bat files, desktop icons/shortcuts are created for RoiEditor and cellpose.
 
 ## 🙏 Acknowledgement
-The team of prof Katrien Koppo @ Katholieke Universiteit Leuven kindly granted the use of the sample images in the TestData folder.
+The team of Prof. Katrien Koppo at KU Leuven kindly granted permission to use the sample images in the TestData folder.
 
 ## ✨ Workflow
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>

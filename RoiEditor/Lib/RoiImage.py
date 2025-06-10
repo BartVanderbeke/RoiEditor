@@ -121,7 +121,7 @@ class RoiImageWindow(QMainWindow):
         self.state_style_map: Dict[int, Dict] = {
             Roi.ROI_STATE_ACTIVE:   {"pen": QPen(Qt.GlobalColor.yellow,0.5,Qt.PenStyle.SolidLine), "z": 2},
             Roi.ROI_STATE_DELETED:  {"pen": QPen(Qt.GlobalColor.red,0.2,Qt.PenStyle.SolidLine), "z": 1},
-            Roi.ROI_STATE_SELECTED: {"pen": QPen(Qt.GlobalColor.blue,5.0,Qt.PenStyle.SolidLine), "z": 3}
+            Roi.ROI_STATE_SELECTED: {"pen": QPen(Qt.GlobalColor.blue,0.5,Qt.PenStyle.SolidLine), "z": 3}
         }
 
         self.z_on_top: int = 4 # on top of everything
