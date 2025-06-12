@@ -29,15 +29,22 @@ def read_ome_metadata(tiff_path):
 
         metadata = parse_ome_xml(description)
 
+        # if "Image" in metadata and "Description" in metadata["Image"]:
+        #     desc = metadata["Image"]["Description"]
+        #     if isinstance(desc, dict) and "text" in desc:
+        #         metadata["Image"]["Description"] = parse_description_text(desc["text"])
+
         if "Image" in metadata and "Description" in metadata["Image"]:
             desc = metadata["Image"]["Description"]
-            if isinstance(desc, dict) and "text" in desc:
-                metadata["Image"]["Description"] = parse_description_text(desc["text"])
+            if isinstance(desc, dict):
+                text_value = desc.get("text", "")
+                metadata["Image"]["Description"] = text_value
+
         return {"OME": metadata} # "BasicTags": basic_tags}
 
 
 def parse_ome_xml(xml_string):
-    parser = ET.XMLParser(remove_blank_text=True)
+    parser = ET.XMLParser()
     root = ET.fromstring(xml_string.encode('utf-8'), parser)
 
     def parse_element(elem):
@@ -46,6 +53,9 @@ def parse_ome_xml(xml_string):
         if elem.text and elem.text.strip():
             data['text'] = elem.text.strip()
         for child in elem:
+            # Skip comments or non-elements
+            if not isinstance(child.tag, str):
+                continue
             tag = str(child.tag).split('}')[-1]  # extra safety
             child_data = parse_element(child)
             if tag not in data:
@@ -134,7 +144,7 @@ def update_ome_metadata_from_json(json_data, tiff_path, output_path):
         if not xml_string or not (xml_string.strip().startswith('<?xml') or xml_string.strip().startswith('<OME')):
             raise ValueError("TIFF contains no (valid) OME-XML")
 
-    parser = ET.XMLParser(remove_blank_text=True)
+    parser = ET.XMLParser()
     root = ET.fromstring(xml_string.encode('utf-8'), parser)
 
     def update_element(elem, updates):
@@ -162,7 +172,7 @@ def update_ome_metadata_from_json(json_data, tiff_path, output_path):
     update_element(root, json_data)
 
 
-    new_description = ET.tostring(root, encoding='utf-8', xml_declaration=True, pretty_print=True).decode('utf-8')
+    new_description = ET.tostring(root, encoding='utf-8', xml_declaration=True).decode('utf-8')
     #print(new_description)
 
     with TiffWriter(output_path, bigtiff=None) as out:
@@ -171,4 +181,3 @@ def update_ome_metadata_from_json(json_data, tiff_path, output_path):
             description=new_description,
             metadata=None 
         )
-
