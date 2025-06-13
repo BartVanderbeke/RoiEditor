@@ -32,7 +32,7 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     - size_threshold:
     """
     manager: TinyRoiManager = rm
-    
+
     # Gebruik regionprops direct op de label_image; elke unieke labelwaarde vormt een regio.
     regions = np.array(regionprops(label_image=label_image,cache=True))
     max_label= max(r.label for r in regions)
@@ -41,6 +41,10 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     edge_h: int = width-1
     edge_v: int = height-1
     roi_array = np.full(max_label+1,None,dtype=Roi)
+
+    edge_set= set()
+    if remove_edges:
+        edge_set = set(get_edge_labels(label_image))
 
     for region in regions:
         idx = region.label
@@ -63,7 +67,7 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         min_row, min_col, max_row, max_col = region.bbox
         bounds=(min_row, min_col,max_row,max_col)
         coords = np.add(coords, np.array([min_col, min_row]))
-        is_on_edge = remove_edges and (min_row <= 0 or min_col <= 0 or max_row >= edge_v or max_col >= edge_h)
+        is_on_edge = idx in edge_set
         is_small =  remove_small and area < size_threshold
 
         key = int(is_on_edge) * 1 + int(is_small) * 2
@@ -89,3 +93,18 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         roi_array[region.label]=roi
     
     manager.add_from_list_unchecked(roi_array)
+
+
+def get_edge_labels(label_image: np.ndarray) -> np.ndarray:
+
+  top = label_image[0, :]
+  bottom = label_image[-1, :]
+  left = label_image[:, 0]
+  right = label_image[:, -1]
+  
+  border_values = np.concatenate([top, bottom, left, right])
+  
+  unique_labels = np.unique(border_values)
+  unique_labels = unique_labels[unique_labels != 0]
+  
+  return unique_labels

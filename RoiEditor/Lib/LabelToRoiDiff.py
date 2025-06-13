@@ -66,12 +66,9 @@ def erase_label_edges(label_img):
 
 def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:
     
-    height, width = label_image.shape
-    edge_h: int = width-1
-    edge_v: int = height-1
-
-    edge_h = width - 1
-    edge_v = height - 1
+    edge_set= set()
+    if remove_edges:
+        edge_set = set(get_edge_labels(label_image))
 
     lbl_img = remove_internal_edges(label_image)
     lbl_img = (lbl_img > 0).astype(np.uint8) * 255
@@ -123,7 +120,7 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
 
         area=cv2.contourArea(contour)
 
-        is_on_edge = remove_edges and (top <= 0 or left <= 0 or bottom >= edge_v or right >= edge_h)
+        is_on_edge = label_value in edge_set
         is_small = remove_small and area < size_threshold
         key = int(is_on_edge) * 1 + int(is_small) * 2
         (state, tags) = state_and_tags[key]
@@ -143,3 +140,16 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         roi_array[label_value]=roi
     rm.add_from_list_unchecked(roi_array)
 
+def get_edge_labels(label_image: np.ndarray) -> np.ndarray:
+
+  top = label_image[0, :]
+  bottom = label_image[-1, :]
+  left = label_image[:, 0]
+  right = label_image[:, -1]
+  
+  border_values = np.concatenate([top, bottom, left, right])
+  
+  unique_labels = np.unique(border_values)
+  unique_labels = unique_labels[unique_labels != 0]
+  
+  return unique_labels
