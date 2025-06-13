@@ -29,4 +29,4 @@ The team of Prof. Katrien Koppo at KU Leuven kindly granted permission to use th
 
 ## ✨ Workflow
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
-<img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="400"/>
+<img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="600"/>
