@@ -27,8 +27,8 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 ## 🙏 Acknowledgement
 The team of Prof. Katrien Koppo at KU Leuven kindly granted permission to use the sample images in the TestData folder.
 
-RoiImage uses a trimmed down version of Pierre Raybaut's [array2d_to_qpolygonf](https://github.com/PlotPyStack/PythonQwt/blob/master/qwt/plot_curve.py#L63)
-TinyRoiFile is a stripped version of Christoph Gohlke's [roifile](https://pypi.org/project/roifile/)
+RoiImage uses a trimmed down version of Pierre Raybaut's [array2d_to_qpolygonf](https://github.com/PlotPyStack/PythonQwt/blob/master/qwt/plot_curve.py#L63).<br>
+TinyRoiFile is a stripped version of Christoph Gohlke's [roifile](https://pypi.org/project/roifile/).
 
 ## ✨ Workflow
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
