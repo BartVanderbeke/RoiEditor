@@ -1,6 +1,6 @@
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 

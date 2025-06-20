@@ -1,6 +1,6 @@
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
@@ -35,6 +35,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTyp
 
 
 def array2d_to_qpolygonf(_xdata, _ydata):
+    # trimmed down version of Pierre Raybaut's array2d_to_qpolygonf
     # https://github.com/PlotPyStack/PythonQwt/blob/master/qwt/plot_curve.py#L63
     xdata=np.array(_xdata)
     ydata=np.array(_ydata)

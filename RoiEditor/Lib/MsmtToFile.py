@@ -1,10 +1,6 @@
-"""Extension module for the RoiMeasurements class
-this module contains all methods for writing measurements to file
-
-"""
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
@@ -12,6 +8,8 @@ Parts of the code in this project have been derived from chatGPT suggestions.
 When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
+Extension module for the RoiMeasurements class
+this module contains all methods for writing measurements to file
 """
 import threading
 from types import MethodType

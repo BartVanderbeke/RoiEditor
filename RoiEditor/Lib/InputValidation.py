@@ -1,16 +1,15 @@
-"""Extension module for the RoiEditorControlPanel class from RoiEditor module
-this module contains all input validation methods
-
-"""
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
 Parts of the code in this project have been derived from chatGPT suggestions.
 When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
+
+Extension module for the RoiEditorControlPanel class from RoiEditor module
+this module contains all input validation methods
 
 """
 from types import MethodType

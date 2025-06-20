@@ -1,3 +1,5 @@
+""" script that identifies all imports and can install all uninstalled dependencies
+"""
 import os
 import sys
 import subprocess

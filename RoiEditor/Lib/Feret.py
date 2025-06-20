@@ -1,9 +1,6 @@
-"""This module implements the calculation of Feret values for the ROIs.
-    The algorithms are borrowed from the Fiji Java implementation
-"""
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
@@ -11,6 +8,8 @@ Parts of the code in this project have been derived from chatGPT suggestions.
 When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
+This module implements the calculation of Feret values for the ROIs.
+The algorithms are borrowed from the Fiji Java implementation
 
 """
 import numpy as np

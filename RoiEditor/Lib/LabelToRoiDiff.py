@@ -1,6 +1,6 @@
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
@@ -65,7 +65,15 @@ def erase_label_edges(label_img):
     return result
 
 def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:
-    
+    """ this implementation first vreates a gap with background value around each ROI
+        so the area does *not* exactly match the area of the cellpose label
+        This implementation is about 2x faster
+    Parameters:
+    - label_image: 2D NumPy-array with integer labels (0 = background)
+    - remove_edges: do labels at the image edge have to be excluded?
+    - remove_small: do small labels < size_threshold have to be excluded?
+    - size_threshold:
+    """    
     edge_set= set()
     if remove_edges:
         edge_set = set(get_edge_labels(label_image))

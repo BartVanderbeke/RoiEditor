@@ -1,6 +1,6 @@
 """RoiEditor
 
-Author: Bart Vanderbeke
+Author: Bart Vanderbeke & Elisa
 Copyright: © 2025
 License: MIT
 
@@ -24,14 +24,22 @@ state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
 }
 
 def process_label_image(rm: TinyRoiManager, data: dict, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:
-    """
+    """this implementation starts from the outlines image in the dictionary saved by cellpose
+        so the area does *not* exactly match the area of the cellpose label
+        This implementation is about 2x faster
+        Parameters:
+        - dict: image dictionary read from the cellpose npy output
+        - remove_edges: do labels at the image edge have to be excluded?
+        - remove_small: do small labels < size_threshold have to be excluded?
+        - size_threshold:
+       
         the cellpose 'masks' touch each other so there is no gap in between them
         this function starts from the 'outlines' image:first the 'outlines' are dilated to completely
         fill the gaps between ROIs. Inverting the modified outlines reveals the ROIs as isolated islands.
         Now findContours can find all ROI contours in 1 call
         The areas of the ROIs calculated with this method are smaller than the area of ROIs identifies starting from 
         the masks.
-        The ROIs are inflated a little so the median of the ROI areas corresponds to the area of the other method
+        
     """
     masks = data["masks"]
     outlines = data["outlines"]
