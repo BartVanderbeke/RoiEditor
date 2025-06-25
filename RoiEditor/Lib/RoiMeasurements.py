@@ -105,8 +105,8 @@ class RoiMeasurements(QObject):
                 min_val = np.min(values)
                 max_val = np.max(values)
                 iqr =  q3 - q1
-                upper_limit = med + 1.5 * iqr
-                lower_limit = med - 1.5 * iqr
+                upper_limit = q3 + 1.5 * iqr
+                lower_limit = q1 - 1.5 * iqr
                 outlier_mask = (values < lower_limit) | (values > upper_limit)
                 outliers = rois[outlier_mask]
                 num_outliers=len(outliers)
