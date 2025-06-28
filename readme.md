@@ -17,7 +17,7 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - Area & Feret measurements are computed for all ROIs.
 - The stats for each measurement are shown in a histogram window.
 - The user can select the edge of the ROI-cloud or the outliers for each measurement for deletion.
-- An outlier for a measurement is a value deviating more than 1.5 * IQR from the median.
+- An outlier for a measurement is a value outside of [q1 - 1.5 * IQR,q3 + 1.5 * IQR].
 - When the image overlay is activated, a color range from green to red indicates the distance from the median for the selected measurement for each individual ROI.
 - The measurements and statistics are written to both and .xlsx and a .csv file.
 - The ROI data is backed up every 15 minutes.
