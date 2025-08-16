@@ -21,6 +21,7 @@ dependencies = [
     "pyqtgraph",
     "PyQt6",
     "XlsxWriter"
+    "lxml"
 ]
 
 [project.scripts]

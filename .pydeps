@@ -1,0 +1,18 @@
+[pydeps]
+  only = RoiEditor
+  rmprefix = RoiEditor.Lib.
+  exclude =
+    RoiEditor.Lib.TinyLog
+    RoiEditor.Lib.Crumbs
+    RoiEditor.Lib.Context
+    RoiEditor.Lib.StopWatch
+    RoiEditor.Lib.TinyColor
+    RoiEditor.Lib.Feret
+    RoiEditor.Lib.Exif
+    RoiEditor.Lib.Roi
+    RoiEditor.Lib.TinyRoiManager
+    RoiEditor.Lib.LogWindow
+    RoiEditor.Lib.Stylesheet
+    RoiEditor.Lib.RoyalKeyInterceptor
+    RoiEditor.Lib.MouseListener
+    RoiEditor.Lib.MessageBoxInvalidValues
