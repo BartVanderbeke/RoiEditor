@@ -352,7 +352,7 @@
             </size>
            </property>
            <property name="maximumSize">
-            <size>
+            <size>self.file
              <width>225</width>
              <height>125</height>
             </size>

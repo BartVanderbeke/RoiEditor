@@ -14,10 +14,10 @@ this module contains all input validation methods
 """
 from types import MethodType
 
-from .Context import gvars
-from .RoiEditorControlPanel import *
-from .MessageBoxInvalidValues import MessageBoxInvalidValues
-from .Crumbs import format_float
+from Context import gvars
+from RoiEditorControlPanel imp
+from MessageBoxInvalidValues import MessageBoxInvalidValues
+from Crumbs import format_float
 
 def attach_extension_methods(self: 'RoiEditorControlPanel'):
     self.custom_scale_validate = MethodType(custom_scale_validate, self)
@@ -65,34 +65,32 @@ def validate_entries_and_continue(self: 'RoiEditorControlPanel'):
     (ok_min_size,min_size) = self.is_remove_small_valid()
     (ok_custom_scale,custom_scale) = self.is_custom_scale_valid()
 
+    if not (ok_min_size and ok_custom_scale and ok_from_file):
+        log("Invalid values in 'Unit & Scale' or 'Process Labels'",type="error")
+        gvars["selected_unit_and_scale"] = None
+        msgbox = MessageBoxInvalidValues(self)
+        _ = msgbox.exec()
+        return False # go back
+
+    scaler_length = None
+    scaler_area = None
+
     if scale_from_file:
         scaler_length = float(scale_text)
         scaler_area = float(format_float(scaler_length * scaler_length,6))
-    else:
-        scaler_length = None
-        scaler_area = None
-
     self.scalers[self.ID_FROM_FILE]["length"]["scaler"]=scaler_length
     self.scalers[self.ID_FROM_FILE]["area"]["scaler"]=scaler_area
 
-    if ok_custom_scale:
-        scaler_length = float(custom_scale)
-        scaler_area = float(format_float(scaler_length * scaler_length,6))
-    else:
-        scaler_length = None
-        scaler_area = None
-
+    scaler_length = float(custom_scale)
+    scaler_area = float(format_float(scaler_length * scaler_length,6))
     self.scalers[self.ID_SPECIFIED]["length"]["scaler"]=scaler_length
     self.scalers[self.ID_SPECIFIED]["area"]["scaler"]=scaler_area
 
-    if (ok_min_size and ok_custom_scale and ok_from_file):
-        gvars["roi_minimum_size"]=min_size
-        gvars["selected_unit_and_scale"]=self.scalers[checked_id]
-        return True # move on
-    gvars["selected_unit_and_scale"] = None
-    msgbox = MessageBoxInvalidValues(self)
-    _ = msgbox.exec()
-    return False # go back
+
+    gvars["roi_minimum_size"]=min_size
+    gvars["selected_unit_and_scale"]=self.scalers[checked_id]
+    return True # move on
+
             
 
 import re

@@ -12,11 +12,11 @@ I left the (GitHub) url of the original code next to the derived code.
 import os
 from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtCore import QSettings
-from .FileDialog import FileDialog
+from FileDialog import FileDialog
 
-from .Crumbs import normalize_path
-from .Context import gvars
-from .TinyLog import log
+from Crumbs import normalize_path
+from Context import gvars
+from TinyLog import log
 
 def find_related_filenames(reference_filepath: str):
     folder = os.path.dirname(reference_filepath)
@@ -73,7 +73,7 @@ class QOriginalFileChooser:
 
     def showDialog(self):
         self.dialog.setDirectoryfromSettings()
-        log(f"Label start folder: {self.dialog.getDirectory()}")
+        log(f"Label start folder: {self.dialog.getDirectory()}", type="info")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()
@@ -105,7 +105,7 @@ class QLabelFileChooser:
             self.dialog.setDirectory(start_dir)
         else:
             self.dialog.setDirectoryfromSettings()
-        log(f"Label start folder: {self.dialog.getDirectory()}")
+        log(f"Label start folder: {self.dialog.getDirectory()}", type="info")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()
@@ -134,7 +134,7 @@ class QRoiFileChooser:
 
     def showDialog(self):
         self.dialog.setDirectoryfromSettings()
-        log(f"Roi start folder: {self.dialog.getDirectory()}")
+        log(f"Roi start folder: {self.dialog.getDirectory()}", type="info")
 
         if self.dialog.showDialog() == QFileDialog.DialogCode.Accepted:
             selected_files = self.dialog.selectedFiles()

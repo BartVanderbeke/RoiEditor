@@ -20,8 +20,8 @@ import pyqtgraph as pg
 from PyQt6.QtGui import QColor
 from PyQt6.QtCore import Qt
 
-from .Crumbs import format_float
-from .TinyLog import log
+from Crumbs import format_float
+from TinyLog import log
 
 class ColorCycler(object):
     def __init__(self):
@@ -64,7 +64,7 @@ class HistogramFrame(QWidget):
         self.on_measurement_selected: Callable[[str], None]=on_measurement_selected
 
     def populate(self, measurement_names, selected_measurement, msmts,parent=None):
-        from .Stylesheet import overall
+        from Stylesheet import overall
         self.setStyleSheet(overall)
 
         self.measurement_names = measurement_names
@@ -128,8 +128,8 @@ class HistogramFrame(QWidget):
 
     def closeEvent(self, event):
         # minimize iso closing
-        event.ignore()
         self.showMinimized()
+        event.accept()
 
 
     def showEvent(self, event):

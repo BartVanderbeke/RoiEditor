@@ -12,11 +12,11 @@ I left the (GitHub) url of the original code next to the derived code.
 from PyQt6.QtCore import Qt, QObject, QEvent
 from typing import Callable
 
-from .Roi import Roi
-from .TinyLog import log
+from Roi import Roi
+from TinyLog import log
 
 def dummy_callback(str) -> None:
-    log("MouseListener: no callback connected")
+    log("MouseListener: no callback connected", type="error")
 
 class ROIClickListener(QObject):
     def __init__(self,  rm, roi_window, label_array,on_any_change: Callable[[str], None]=dummy_callback,parent=None):
@@ -30,7 +30,7 @@ class ROIClickListener(QObject):
 
     def eventFilter(self, a0: QObject, a1: QEvent):
         if a1.type() == QEvent.Type.MouseButtonDblClick:
-            log("Double Click: no action")
+            log("Double Click: no action", type="info")
             return True
 
         if a1.type() == QEvent.Type.MouseButtonPress and a1.button() == Qt.MouseButton.LeftButton:
@@ -39,24 +39,24 @@ class ROIClickListener(QObject):
             y = int(scene_pos.y())
 
             if not (0 <= x < self.width and 0 <= y < self.height):
-                log("Click outside image bounds")
+                log("Click outside image bounds", type="info")
                 return True
 
             label_val = int(self.label_array[y, x])
             if label_val <= 0:
-                log("Background clicked")
+                log("Background clicked", type="info")
                 return True
 
             roi_name = "L" + str(label_val).zfill(self.name_digits)
 
             state = self.rm.get_state(roi_name)
             if state == Roi.ROI_STATE_DELETED:
-                log(f"ROI {roi_name} already deleted")
+                log(f"ROI {roi_name} already deleted", type="info")
                 return True
 
             if a1.modifiers() & Qt.KeyboardModifier.AltModifier:
                 self.rm.delete(roi_name)
-                self.on_any_change(f"Alt + Click → deleting {roi_name}")
+                self.on_any_change(f"Alt + Click → deleting {roi_name}", type="info")
                 return True
             else:
                 self.rm.toggle(roi_name)

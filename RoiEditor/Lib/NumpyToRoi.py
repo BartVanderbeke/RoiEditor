@@ -12,10 +12,10 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 import cv2
 
-from .Roi import Roi
-from .StopWatch import *
-from .TinyRoiManager import TinyRoiManager
-from .TinyLog import log
+from Roi import Roi
+from StopWatch import *
+from TinyRoiManager import TinyRoiManager
+from TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),

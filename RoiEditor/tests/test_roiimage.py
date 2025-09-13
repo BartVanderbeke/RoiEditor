@@ -56,7 +56,7 @@ def test_roiimage():
     dummy = QWidget()
     dummy.setStyleSheet(overall)
 
-    win = RoiImageWindow(image_array=background_img,rm=rm,msmts=msmts, on_any_change=on_any_change,parent=dummy)
+    win = RoiImageWindow(qimage=background_img,rm=rm,msmts=msmts, on_any_change=on_any_change,parent=dummy)
 
 
     win.draw_image()

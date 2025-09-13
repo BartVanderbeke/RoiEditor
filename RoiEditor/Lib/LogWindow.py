@@ -79,7 +79,6 @@ class StdoutRedirector(QObject):
 
         span_stack = []
 
-        # Eerst HTML escapen (maar ANSI behouden)
         text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
 
         def replace(match):

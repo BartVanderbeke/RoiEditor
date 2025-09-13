@@ -30,6 +30,7 @@ class RectangleSelectorView(QGraphicsView):
         super().__init__(parent)
         self.setBackgroundBrush(Qt.GlobalColor.black)
         self.viewport().setStyleSheet("background-color: black;")
+        self.viewport().setMouseTracking(True)
         self._zoom=1.0
         self.setFrameStyle(0)
         self.setMouseTracking(True)
@@ -54,18 +55,25 @@ class RectangleSelectorView(QGraphicsView):
             self.origin = self.mapToScene(event.pos())
             self.rubber_band.setRect(QRectF(self.origin, self.origin))
             self.rubber_band.setVisible(True)
+        else:
+            super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.rubber_band.isVisible():
             current_pos = self.mapToScene(event.pos())
             rect = QRectF(self.origin, current_pos).normalized()
             self.rubber_band.setRect(rect)
+        else:
+            super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.MouseButton.RightButton and self.rubber_band.isVisible():
             rect = self.rubber_band.rect()
             self.rubber_band.setVisible(False)
             self.on_rect_drawn(rect)
+        else:
+            super().mouseReleaseEvent(event)
+
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

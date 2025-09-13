@@ -12,8 +12,9 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 import cv2
 
-from .TinyRoiManager import TinyRoiManager 
-from .TinyLog import log
+from Roi import Roi
+from TinyRoiManager import TinyRoiManager 
+from TinyLog import log
 
 
 def select_outer_rois_vdb(rm: TinyRoiManager, step: int = 10):
@@ -99,7 +100,7 @@ def select_outer_rois_vdb3(rm: TinyRoiManager, step: int = 10):
 
     to_be_selected_rois = list({roi for r, roi in furthest_in_bin if roi is not None})
     rm.select(to_be_selected_rois, reason_of_selection="edge.section", additive=True)
-    log(f"Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.")
+    log(f"Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.",type="info")
 
 
 def select_outer_rois_vdb4(rm: TinyRoiManager, step: int = 10):
@@ -140,15 +141,35 @@ def select_outer_rois_vdb4(rm: TinyRoiManager, step: int = 10):
 
     to_be_selected_rois = list({roi for r, roi in furthest_in_bin if roi is not None})
     rm.select(to_be_selected_rois, reason_of_selection="edge.section", additive=True)
-    log(f"select_outer_rois_vdb4: Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.")
+    log(f"select_outer_rois_vdb4: Selected {len(to_be_selected_rois)} ROIs over {num_bins} bins.",type="info")
 
 
+def erase_labels_inplace(label_img: np.ndarray, to_delete):
+    """
+    Zet alle pixels met labels in `to_delete` naar 0 (achtergrond), in-place.
+    label_img: int-beeld (0 = achtergrond)
+    to_delete: iterabel met int labels die weg mogen (hoogstens enkele honderden)
+    """
+    if not hasattr(to_delete, "__len__") or len(to_delete) == 0:
+        return label_img
 
-def select_outer_rois_vdb5(rm: TinyRoiManager, filtered_label_image: np.ndarray):
+    # Uniek + juiste dtype voor snelle isin
+    ids = np.unique(np.asarray(to_delete, dtype=label_img.dtype))
+    # In-place wissen via vectorized membership
+    mask = np.isin(label_img, ids, assume_unique=True)
+    label_img[mask] = 0
+    return label_img
+
+def select_outer_rois_vdb5(rm: TinyRoiManager, label_image: np.ndarray):
     if not len(rm):
         log("select_outer_rois_vdb5: No ROIs in ROI Manager",type="warning")
         return
-    assert filtered_label_image is not None
+    deleted_rois = [int(name[1:]) for name, roi in rm if roi.state == Roi.ROI_STATE_DELETED]
+    filtered_label_image = label_image.copy()
+    erase_labels_inplace(filtered_label_image, deleted_rois)
+
+    # label_image is necessary to avoid that deleted ROIs are considered for identifying the outer edge
+    assert label_image is not None
     # Step 1: binary image of all ROis
     binary_mask = (filtered_label_image > 0).astype(np.uint8) * 255
 
@@ -162,7 +183,9 @@ def select_outer_rois_vdb5(rm: TinyRoiManager, filtered_label_image: np.ndarray)
     cv2.drawContours(image=outer_mask, contours=contours, contourIdx=-1, color=255, thickness=10)
 
     # Step 4: get the label values for labels intersecting with contour
-    roi_labels_on_edge = np.unique(filtered_label_image[outer_mask > 0])
+    # now we only have the contour pixels in outer_mask
+    # we need the corresponding pixels in the label image to know what ROI they belong to
+    roi_labels_on_edge = np.unique(label_image[outer_mask > 0])
     roi_labels_on_edge = roi_labels_on_edge[roi_labels_on_edge > 0]  # verwijder achtergrond
 
     # Step 5: convert label idx to actual ROIs
@@ -180,4 +203,4 @@ def select_outer_rois_vdb5(rm: TinyRoiManager, filtered_label_image: np.ndarray)
 
     # Step 6: select ROIs
     rm.select(selected_rois, reason_of_selection="edge.outer", additive=True)
-    log(f"Selected {len(selected_rois)} ROIs from outer contour.")
+    log(f"Selected {len(selected_rois)} ROIs from outer contour.", type="info")

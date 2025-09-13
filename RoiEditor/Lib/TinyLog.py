@@ -35,20 +35,35 @@ class classproperty:
         self.fset = fset
         return self
 
+
+            # '30': 'black',
+            # '31': 'red',
+            # '32': 'green',
+            # '33': 'orange',         # yellow/orange
+            # '34': 'blue',
+            # '35': 'magenta',
+            # '36': 'cyan',
+            # '37': 'lightgrey',      # grayish white
+            # '90': 'gray',
+            # '91': 'lightcoral',     # red
+            # '92': 'lightgreen',
+            # '93': 'khaki',          # bright yellow?
+            # '94': 'lightskyblue',
+            # '95': 'plum',           # pink
+            # '96': 'lightcyan',
+            # '97': 'white'
+
 class TinyLog:
-    LOG_LVL_VERBOSE = 255
-    LOG_WHEN_VERBOSE= 254
+
     LOG_LVL_NORMAL = 128
-    LOG_WHEN_VERBOSE= 257
-    LOG_LVL_NOTHING = 0
     LOG_NEVER=0
 
     TYPE_TO_COLOR = {
         "info": "\033[97m",     # lightgray
-        "warning": "\033[33m",  # yellow
+        "warning": "\033[33m",  # orange
         "error": "\033[31m",    # red
-        "happy": "\033[32m",    # green
-        "debug": "\033[34m"     # blue
+        "happy": "\033[92m",    # light green
+        "debug": "\033[36m"     # cyan
     }
 
     PRINT_ALWAYS={"error","warning"}
@@ -79,10 +94,10 @@ class TinyLog:
     @staticmethod
     def log(*args, sep='', end='\n', file=None, flush=False, type: str = "info",log_level: np.uint8 =LOG_LVL_NORMAL-1):
         if log_level <= 0:
-            print(f"Used log_level must be uint8>0")
+            #print(f"Used log_level must be uint8>0")
             log_level=1
         if not (type in TinyLog.PRINT_ALWAYS or TinyLog.will_print(log_level)):
-            print(f"Not printing since print's log level {log_level} >= set log level {TinyLog._only_print_what_has_lower_level_than}")
+            #print(f"Not printing since print's log level {log_level} >= set log level {TinyLog._only_print_what_has_lower_level_than}")
             return
         
         COLOR = TinyLog.TYPE_TO_COLOR.get(type, "\033[97m")

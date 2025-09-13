@@ -10,7 +10,7 @@ I left the (GitHub) url of the original code next to the derived code.
 
 """
 from typing import Any
-from .TinyLog import TinyLog
+from TinyLog import TinyLog
 
 # when the keys mentioned below are hit while some ROIs are selected
 # the ROIs are deleted and the ROIs are tagged with the justification for the deletion: "freeze",...
@@ -41,7 +41,7 @@ gvars["log_level"] = TinyLog.LOG_LVL_NORMAL
 gvars["selected_unit_and_scale"] = None
 
 
-gvars["roi_minimum_size_range"] = { "minval": 49,  "default": 100, "maxval": 4999}
+gvars["roi_minimum_size_range"] = { "minval": 49,  "default": 100, "maxval": 4999} # pixels
 # the regex used for custom_scale limits to >1e-6 automatically
-gvars["custom_scale_range"] = { "minval": 1e-6,  "default": 0.645, "maxval": 50.0}
+gvars["custom_scale_range"] = { "minval": 1e-6,  "default": 0.917491, "maxval": 50.0} # micron/pixel
  

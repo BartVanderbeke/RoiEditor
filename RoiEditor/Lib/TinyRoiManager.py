@@ -14,10 +14,10 @@ from numpy.typing import NDArray
 import numpy as np
 from typing import Optional, Callable
 
-from .Roi import Roi
-from .Feret import feret_index
-from .TinyLog import log
-from .Feret import get_values
+from Roi import Roi
+from Feret import feret_index
+from TinyLog import log
+from Feret import get_values
 
 from PyQt6.QtCore import QObject
 class TinyRoiManager(QObject):
@@ -36,19 +36,24 @@ class TinyRoiManager(QObject):
                              Roi.ROI_STATE_SELECTED: Roi.ROI_STATE_ACTIVE
     }
 
-    def __init__(self, filtered_label_image: np.ndarray=None,parent=None):
+    def __init__(self,prefix: str = "L", parent=None):
         super().__init__(parent=parent)
-        self._name_to_roi: dict[str, Roi] = {}
-        self.filtered_label_image=filtered_label_image
-        self._use_label_image: bool= self.filtered_label_image is not None
+        self._name_to_roi: dict[str, Roi] = dict()
+        self.prefix = prefix
 
-    @classmethod
-    def is_valid(cls,rm: "TinyRoiManager"):
+    @staticmethod
+    def is_valid(rm: "TinyRoiManager"):
         return rm is not None and len(rm._name_to_roi)>0
 
     @property
     def num_of_rois(self):
         return len(self._name_to_roi)
+    
+    def first_free_name(self) -> str:
+        max_key_str = max(self._name_to_roi.keys(), key=lambda k: int(k[1:]))
+        first_free = int(max_key_str[1:]) + 1
+        name = self.idx_to_name(first_free)
+        return name
     
     def as_array(self):
         arr:  NDArray[Any]=np.ndarray(self._name_to_roi.values())
@@ -56,12 +61,6 @@ class TinyRoiManager(QObject):
 
     def add_from_list_unchecked(self,rois):
         self._name_to_roi ={roi.name: roi for roi in rois if roi}
-
-        if self._use_label_image:
-            labels_to_clear = [int(roi.name[1:]) for roi in rois if roi and roi.state == Roi.ROI_STATE_DELETED]
-            if labels_to_clear:
-                mask = np.isin(self.filtered_label_image, labels_to_clear)
-                self.filtered_label_image[mask] = 0 
 
     def add(self, rois):
         if not isinstance(rois, (list, set)):
@@ -76,7 +75,7 @@ class TinyRoiManager(QObject):
             self._name_to_roi[roi.name] = roi
 
     def delete(self, rois_or_names):
-        labels_to_clear: list[int] =[]
+        labels_to_clear: list[int] =list()
         for roi in self.iter_rois_or_names(rois_or_names):
             if roi:
                 roi.state = Roi.ROI_STATE_DELETED
@@ -85,12 +84,16 @@ class TinyRoiManager(QObject):
                     roi.reason_of_selection = ""
                 label = int(roi.name[1:])
                 labels_to_clear.append(label)
-        if labels_to_clear and self._use_label_image:
-            mask = np.isin(self.filtered_label_image, labels_to_clear)
-            self.filtered_label_image[mask] = 0   
+                roi_active_children = [c for c in roi.children if c.state != Roi.ROI_STATE_DELETED]
+                if len(roi_active_children) > 0:
+                    kids = "child" if len(roi_active_children)==1 else "children"
+                    log(f"Deleting {len(roi_active_children)} {kids} of {roi.name}")
+                    for child in roi_active_children:
+                        child.state = Roi.ROI_STATE_DELETED
+                        child.tags.add("DELETED.WITH_PARENT")
 
     def delete_selected(self,reason_of_deletion=None):
-        labels_to_clear: list[int] =[]
+        labels_to_clear: list[int] =list()
         for roi in self._name_to_roi.values():
             if roi.state == Roi.ROI_STATE_SELECTED:
                 roi.state = Roi.ROI_STATE_DELETED
@@ -101,12 +104,19 @@ class TinyRoiManager(QObject):
                 roi.reason_of_selection = ""
                 label = int(roi.name[1:])
                 labels_to_clear.append(label)
-        if self._use_label_image and labels_to_clear:
-            mask = np.isin(self.filtered_label_image, labels_to_clear)
-            self.filtered_label_image[mask] = 0
+                if roi.children:
+                    roi_active_children = [c for c in roi.children if c.state != Roi.ROI_STATE_DELETED]
+                else:
+                    roi_active_children = []
+                if len(roi_active_children) > 0:
+                    kids = "child" if len(roi_active_children)==1 else "children"
+                    log(f"Deleting {len(roi_active_children)} {kids} of {roi.name}")
+                    for child in roi_active_children:
+                        child.state = Roi.ROI_STATE_DELETED
+                        child.tags.add("DELETED.WITH_PARENT")
    
 
-    def toggle(self, rois_or_names):
+    def toggle_selection(self, rois_or_names):
         for roi in self.iter_rois_or_names(rois_or_names):
             roi.state = self.TOGGLE[roi.state]
             roi.reason_of_selection = ""
@@ -148,15 +158,18 @@ class TinyRoiManager(QObject):
             roi.state = self.DESELECT[roi.state]
             roi.reason_of_selection = ""
 
-    def set_state(self, rois_or_names, new_state):
-        for name in self._resolve_names(rois_or_names):
-            roi = self._name_to_roi.get(name)
-            if roi:
-                roi.state = new_state
-                roi.reason_of_selection = ""
+    # def set_state(self, rois_or_names, new_state):
+    #     for name in self._resolve_names(rois_or_names):
+    #         roi = self._name_to_roi.get(name)
+    #         if roi:
+    #             roi.state = new_state
+    #             roi.reason_of_selection = ""
+
+    def get_measurement_names(self):
+        return ["Area"] + list(feret_index.keys()) + ["central nuclei"]
 
     def get_measurements_by_filter(self, filter: Optional[Callable[[Roi], None]] = None) -> dict[str, list[float]]:
-        keys = ["Area"] + list(feret_index.keys())+["Roi"]
+        keys = self.get_measurement_names() + ["Roi"]
         result = {key: [] for key in keys}
         filter = filter or (lambda _: True)
         for _, roi in self.iter_by_filter(filter):
@@ -165,20 +178,13 @@ class TinyRoiManager(QObject):
             for feret_name, index in feret_index.items():
                 result[feret_name].append(ferets[index])
             result["Roi"].append(roi)
+            if roi.children:
+                num_central_nuclei = sum(1 for c in roi.children if c.state != Roi.ROI_STATE_DELETED)
+            else:
+                num_central_nuclei = 0
+            result["central nuclei"].append(num_central_nuclei)
         for key in keys:
             result[key]=np.array(result[key])
-        return result
-
-    def get_measurements_by_state(self, state: int = None) -> dict[str, list[float]]:
-        keys = ["Area"] + list(feret_index.keys())
-        result = {key: [] for key in keys}
-        state = state or Roi.ROI_STATE_ACTIVE
-        for _, roi in self.iter_by_state(state):
-            result["Area"].append(roi.area)
-            ferets = roi.feret_values()
-            for feret_name, index in feret_index.items():
-                result[feret_name].append(ferets[index])
-
         return result
 
     def get_roi(self, name):
@@ -273,8 +279,35 @@ class TinyRoiManager(QObject):
         
     def idx_to_name(self,idx) -> str:
         max_digits: int = len(str(self.num_of_rois))
-        return f"L{idx:0{max_digits}d}"
+        return f"{self.prefix}{idx:0{max_digits}d}"
     
     def name_to_idx(name: str) -> int:
         return int(name[1:])
     
+    @staticmethod
+    def zip(parent_rm: "TinyRoiManager", child_rm: "TinyRoiManager"):
+        if not parent_rm:
+            log("Invalid Parent RoiManager provided for zipping", type="error")
+            return
+        if not child_rm:
+            log("Invalid Child RoiManager provided for zipping", type="error")
+            return
+        if len(child_rm._name_to_roi)==0:
+            log("Empty Child RoiManager provided for zipping", type="warning")
+            return
+        if len(parent_rm._name_to_roi)==0:
+            log("Empty Parent RoiManager provided for zipping", type="warning")
+            return
+        
+
+        for _, child_roi in child_rm.iter_all():
+            if not child_roi.parent or child_roi.parent=="":
+                child_roi.parent =None
+                continue
+            parent_roi_name: str = str(child_roi.parent)
+            parent_roi = parent_rm.get_roi(parent_roi_name)  
+            if not parent_roi:
+                log(f"Parent ROI 'Parent {parent_roi_name}' not found for child {child_roi.name} in Parent RoiManager", type="error")
+                continue
+            child_roi.parent = parent_roi
+            parent_roi.children.append(child_roi)

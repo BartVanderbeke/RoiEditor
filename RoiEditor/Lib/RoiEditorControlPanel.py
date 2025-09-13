@@ -11,6 +11,8 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import sys
 import os
+import re
+
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox
 )
@@ -20,16 +22,17 @@ from PyQt6 import uic
 
 from pathlib import Path
 
-from .FileChoosers import find_related_filenames
-from .Context import gvars, key_to_label_map
+from FileChoosers import find_related_filenames
+from Context import gvars, key_to_label_map
 
-from .Crumbs import normalize_path
+from Crumbs import normalize_path
 
-from .Workbench import Workbench
-from .TinyLog import log
-from .Exif import retrieve_tiff_image_info
-from .InputValidation import attach_extension_methods
-from .Stylesheet import *
+from Workbench import Workbench
+from TinyLog import log
+from Exif import retrieve_tiff_image_info
+#from InputValidation import attach_extension_methods
+from Stylesheet import *
+from Crumbs import format_float
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
@@ -73,7 +76,8 @@ class RoiEditorControlPanel(QMainWindow):
 
         self.file= { "org" : { "name" : None, "qlabel" : self.txt_original},
             "label" : { "name" : None, "qlabel" : self.txt_label},
-            "zip" : { "name" : None, "qlabel" : self.txt_zip}
+            "zip" : { "name" : None, "qlabel" : self.txt_zip},
+            "nukezip" : { "name" : None, "qlabel" : self.txt_zip}
         }
 
         self.original_stdout = sys.stdout
@@ -96,7 +100,7 @@ class RoiEditorControlPanel(QMainWindow):
         }
 
 
-        attach_extension_methods(self)
+        #attach_extension_methods(self)
                       
 
     def closeEvent(self, event):
@@ -110,42 +114,44 @@ class RoiEditorControlPanel(QMainWindow):
             self.clean_up()
 
         print(f"Closing application: {self.windowTitle()}")
+        self.close_windows([])
         super().close()
         self.deleteLater()
 
 
     def on_previous(self):
-
         self.reset_names()
         if self.workbench:
             self.clean_up()
-            self.close_windows(criterion=lambda x: x is not self and x is not self.log_window)
+        self.close_windows(exclude_list = ['RoiEditor - Log Window'])
     
     def on_fail_to_build(self,msg:str=""):
         self.on_previous()
         
     def on_finish(self):
-
         if self.workbench:
             self.clean_up()
-            self.close_windows(criterion=lambda x: x is not self)
+        self.close_windows()
         self.closeEvent(None)
 
-    def close_windows(self,criterion):
-        print("Closing windows")
+    def close_windows(self, exclude_list = []):
+        log("Closing windows",type="info",log_level=1000)
         for widget in QApplication.topLevelWidgets():
-            if not criterion(self):
+            if  not widget or widget is self:
                 continue
-            wpn = widget.parent().windowTitle() if widget.parent() else "orphan "+type(widget).__name__
+            wpn = widget.parent.windowTitle() if widget.parent and hasattr(widget.parent, 'windowTitle') else "orphan "+type(widget).__name__
             name = widget.windowTitle() or widget.objectName() or wpn
             if name:
-                print(f"Closing window: {name}")
-            super_obj = super(type(widget),widget)
-            if hasattr(super_obj,"close"):
-                super_obj.close()
-            else:
-                widget.close()
-            widget.deleteLater()
+                if name in exclude_list:
+                    log(f"Skipping window: {name}",type="info",log_level=1000)
+                    continue
+                if name in ["RoiEditor - Control Panel","RoiEditor - Log Window","ROI Editor - Image Window"] or name.startswith("Histogram"):
+                    log(f"Closing window: {name}",type="info",log_level=1000)
+                    widget.close()
+                    widget.deleteLater()
+
+
+
 
 
     def clean_up(self):
@@ -217,15 +223,15 @@ class RoiEditorControlPanel(QMainWindow):
         qlbl.setStyleSheet(self.fn_color_dict[False])
 
     def on_click_clear_original(self):
-        log("Clear original filename")
+        log("Clear original filename", type="info")
         self.reset_filename(for_which="org")
 
     def on_click_clear_label(self):
-        log("Clear label filename")
+        log("Clear label filename", type="info")
         self.reset_filename(for_which="label")
                             
     def on_click_clear_zip(self):
-        log("Clear zip filename")
+        log("Clear zip filename", type="info")
         self.reset_filename(for_which="zip")
 
     def on_click_browse_original(self):
@@ -265,26 +271,46 @@ class RoiEditorControlPanel(QMainWindow):
 
         path_str_org = self.file["org"]["name"]
         path_str_lbl = self.file["label"]["name"]
-        path_str_zip= self.file["zip"]["name"]
+        path_str_cell_zip= self.file["zip"]["name"]
+        
 
         if not (path_str_org and path_str_lbl) or path_str_org=="<no name>" or path_str_lbl=="<no name>":
-            log("Original or label file not selected",type="error")
+            log("Original or label file not selected",type="warning")
             return
         if not (Path(path_str_org).exists() and Path(path_str_lbl).exists()):
-            log("Original or label file cannot be found",type="error")
+            log("Original or label file cannot be found",type="warning")
             return
         
         if not self.validate_entries_and_continue(): # ... or not
             log("Please enter valid numbers",type="warning")
             return
 
-        if not (path_str_zip and Path(path_str_zip).exists()) or path_str_zip=="<no name>":
+        if not (path_str_cell_zip and Path(path_str_cell_zip).exists()) or path_str_cell_zip=="<no name>":
             log("Zip file not specified or not found",type="warning")
             self.file["zip"]["name"]="<no name>"
             self.file["zip"]["qlabel"].setText("<no name>")
 
+            self.file["nukezip"]["name"]="<no name>"
+            #self.file["nukezip"]["qlabel"].setText("<no name>")
+            path_str_nuke_zip=None
+            path_str_cell_zip=None
+            path_nuke_zip=Path()
+        else:
+            org_path=Path(path_str_org)
+            path_nuke_zip=org_path.parent / Path(org_path.stem+"_NukeRoiSet.zip")
+            path_str_nuke_zip=str(path_nuke_zip)
+
+        if not (path_str_nuke_zip and path_nuke_zip.exists()) or path_str_nuke_zip=="<no name>":
+            log("Nuke zip file not specified or not found",type="warning")
+            self.file["nukezip"]["name"]="<no name>"
+            #self.file["nukezip"]["qlabel"].setText("<no name>")
+            path_str_nuke_zip="<no name>"
+            path_nuke_zip=Path()
+
+        
+
         if self.workbench:
-            log("Cleaning up previous session")
+            log("Cleaning up previous session", type="info")
             self.clean_up()
 
 
@@ -292,9 +318,10 @@ class RoiEditorControlPanel(QMainWindow):
         self.collect_and_report_settings()
         self.reset_styles()
 
-        self.workbench = Workbench(original_file=self.file["org"]["name"],
-                                   label_file=self.file["label"]["name"],
-                                   roi_file=self.file["zip"]["name"],
+        self.workbench = Workbench(original_file=path_str_org,
+                                   label_file=path_str_lbl,
+                                   cell_roi_file=path_str_cell_zip,
+                                   nuke_roi_file=path_str_nuke_zip,
                                    on_fail_to_write=self.on_cannot_write_to_file,
                                    on_fail_to_build=self.on_fail_to_build,
                                    key_to_label_map=key_to_label_map,parent=self)
@@ -371,16 +398,16 @@ class RoiEditorControlPanel(QMainWindow):
         msg.exec() # modal
 
     def collect_and_report_settings(self):
-        log("Original:", self.file["org"]["name"])
-        log("Label:", self.file["label"]["name"])
-        log("Zip:", self.file["zip"]["name"])
+        log("Original:", self.file["org"]["name"], type="info")
+        log("Label:", self.file["label"]["name"],type="info")
+        log("Zip:", self.file["zip"]["name"], type="info")
         gvars["remove_at_edge"]=self.cbEdge.isChecked()
         gvars["remove_small"]=self.cbSmall.isChecked()
-        log("Remove at edge?", gvars["remove_at_edge"])
-        log("Remove small?", gvars["remove_small"])
-        log("Min size:", gvars["roi_minimum_size"])
+        log("Remove at edge?", gvars["remove_at_edge"], type="info")
+        log("Remove small?", gvars["remove_small"], type="info")
+        log("Min size:", gvars["roi_minimum_size"], type="info")
         # {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}, "source": "no scaler/unit selected"},
-        log(gvars["selected_unit_and_scale"])
+        log(gvars["selected_unit_and_scale"], type="info")
 
     def connect_all_handlers(self):
         self.cb_show_names.setChecked(gvars["show_names"])
@@ -441,3 +468,85 @@ class RoiEditorControlPanel(QMainWindow):
         self.interceptor = RoyalKeyInterceptor(mapping=interceptor_key_action,parent=self)
         self.interceptor.setObjectName("Royal key interceptor")
         self.installEventFilter(self.interceptor)
+
+    def is_custom_scale_valid(self: 'RoiEditorControlPanel'):
+        text= self.le_custom_scale.text()
+        rng =gvars["custom_scale_range"]
+        minval = rng["minval"]
+        maxval = rng["maxval"]
+        fallback = rng["default"]
+        return RoiEditorControlPanel.try_parse_float(val=text, minval=minval, maxval=maxval, fallback=fallback)
+
+    def is_remove_small_valid(self: 'RoiEditorControlPanel'):
+        text = self.tbSize.text()
+        rng =gvars["roi_minimum_size_range"]
+        minval = rng["minval"]
+        maxval = rng["maxval"]
+        fallback = rng["default"]
+        return RoiEditorControlPanel.try_parse_int(val=text, minval=minval, maxval=maxval, fallback=fallback)
+
+    def custom_scale_validate(self: 'RoiEditorControlPanel',text: str):
+        (ok,_) = self.is_custom_scale_valid()
+        if ok:
+            self.le_custom_scale.setStyleSheet("")
+        else:
+            self.le_custom_scale.setStyleSheet("QLineEdit { border: 1px solid red; }")
+
+    def remove_small_validate(self: 'RoiEditorControlPanel',text:str):
+        (ok,_) = self.is_remove_small_valid()
+        if ok:
+            self.tbSize.setStyleSheet("")
+        else:
+            self.tbSize.setStyleSheet("QLineEdit { border: 1px solid red; }")
+
+    def validate_entries_and_continue(self: 'RoiEditorControlPanel'):
+        checked_id = self.bg_unit.checkedId()
+        scale_text = self.le_scale_from_file.text()
+        scale_from_file = (scale_text != '') and (scale_text!='unknown')
+        ok_from_file = not (checked_id==self.ID_FROM_FILE) or scale_from_file # P => Q == not P or Q
+        (ok_min_size,min_size) = self.is_remove_small_valid()
+        (ok_custom_scale,custom_scale) = self.is_custom_scale_valid()
+
+        if not (ok_min_size and ok_custom_scale and ok_from_file):
+            log("Invalid values in 'Unit & Scale' or 'Process Labels'",type="error")
+            gvars["selected_unit_and_scale"] = None
+            msgbox = MessageBoxInvalidValues(self)
+            _ = msgbox.exec()
+            return False # go back
+
+        scaler_length = None
+        scaler_area = None
+
+        if scale_from_file:
+            scaler_length = float(scale_text)
+            scaler_area = float(format_float(scaler_length * scaler_length,6))
+        self.scalers[self.ID_FROM_FILE]["length"]["scaler"]=scaler_length
+        self.scalers[self.ID_FROM_FILE]["area"]["scaler"]=scaler_area
+
+        scaler_length = float(custom_scale)
+        scaler_area = float(format_float(scaler_length * scaler_length,6))
+        self.scalers[self.ID_SPECIFIED]["length"]["scaler"]=scaler_length
+        self.scalers[self.ID_SPECIFIED]["area"]["scaler"]=scaler_area
+
+
+        gvars["roi_minimum_size"]=min_size
+        gvars["selected_unit_and_scale"]=self.scalers[checked_id]
+        return True # move on
+
+    @staticmethod
+    def try_parse_int(val, minval, maxval, fallback):
+        m = re.match(r'\s*([+-]?\d+)\s*$', str(val))
+        if not m:
+            return (False,fallback)
+        n = int(m.group(1))
+        ok  = not(n<=0 or n < minval or n > maxval)
+        return (ok, n if ok else fallback)
+
+    @staticmethod
+    def try_parse_float(val, minval, maxval, fallback):
+        m = re.match(r'^\s*(\d+(\.\d*)?|\.\d+)([eE](-[1-6]))?\s*$', str(val))
+        if not m:
+            return (False, fallback)
+        f = float(m.group(0))
+        ok = not (f <= 0 or f < minval or f > maxval )
+        return (ok, f if ok else fallback)

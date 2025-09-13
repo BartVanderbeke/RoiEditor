@@ -16,9 +16,9 @@ import numpy as np
 from math import atan2, pi
 import numpy.typing as npt
 import cv2
-from numba import njit
+#from numba import njit
 
-from .TinyLog import log
+from TinyLog import log
 feret_index ={
         "Feret": 0,
         "FeretAngle": 1,
@@ -88,7 +88,7 @@ def get_values(x_points:npt.NDArray[np.int_], y_points:npt.NDArray[np.int_]):
         feret_ratio = max_diameter/min_width
     else:
         feret_ratio = max_diameter
-        log("ROI with zero min width in Feret calculations","warning")
+        log("ROI with zero min width in Feret calculations","error")
     angle_shifted = (angle_of_max + 90.0) % 180
 
     #return np.array([max_diameter, angle_of_max,angle_shifted, min_width, feret_x, feret_y,feret_ratio])
@@ -103,7 +103,7 @@ def get_values(x_points:npt.NDArray[np.int_], y_points:npt.NDArray[np.int_]):
     return out
 
 
-@njit(nogil=True)
+#@njit(nogil=True)
 def arrange(pt1, pt2):
     if (pt1[0] < pt2[0]) or (pt1[0] == pt2[0] and pt1[1] < pt2[1]):
         feret = pt1

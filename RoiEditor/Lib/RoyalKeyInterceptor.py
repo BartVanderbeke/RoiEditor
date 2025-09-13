@@ -12,7 +12,7 @@ I left the (GitHub) url of the original code next to the derived code.
 
 from PyQt6.QtCore import QObject, QEvent
 
-from .TinyLog import log
+from TinyLog import log
 
 
 class RoyalKeyInterceptor(QObject):
@@ -25,10 +25,10 @@ class RoyalKeyInterceptor(QObject):
             key = event.key()
             if key in self.mapping:
                 action, argument, should_block = self.mapping[key]
-                try:
-                    action(argument)
-                except Exception as ex:
-                    log(f"[Royal Error] Key {key}: {ex}",type="error")
+                #try:
+                action(argument)
+                #except Exception as ex:
+                #    log(f"[Royal Error] Key {key}: {ex}",type="error")
                 return should_block
         return False
 

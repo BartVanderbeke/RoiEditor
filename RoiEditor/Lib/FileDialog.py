@@ -16,8 +16,8 @@ from PyQt6.QtCore import QTimer, QPoint
 
 import sys
 
-from .Crumbs import normalize_path
-from .TinyLog import log
+from Crumbs import normalize_path
+from TinyLog import log
 
 class FileDialog(QFileDialog):
     def __init__(self, x=100, y=100,title: str= "",filter: str ="*.*", parent=None):

@@ -10,7 +10,7 @@ I left the (GitHub) url of the original code next to the derived code.
 
 """
 import time
-from .TinyLog import log
+from TinyLog import log
 class StopWatch:
 
     start_time = None

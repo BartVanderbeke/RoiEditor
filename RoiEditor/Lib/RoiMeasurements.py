@@ -15,13 +15,13 @@ from typing import Union
 from typing import Callable,Any
 from PyQt6.QtGui import QBrush
 
-from .Roi import Roi
+from Roi import Roi
 
-from .TinyLog import log
-from .TinyColor import map_values_to_qbrush
-from .Feret import feret_msmts,feret_quantities,feret_units,feret_scalers
+from TinyLog import log
+from TinyColor import map_values_to_qbrush
+from Feret import feret_msmts,feret_quantities,feret_units,feret_scalers
 
-from .MsmtToFile import attach_extension_methods
+from MsmtToFile import attach_extension_methods
 
 from PyQt6.QtCore import QObject
 class RoiMeasurements(QObject):
@@ -31,10 +31,10 @@ class RoiMeasurements(QObject):
     """
     measurement_names_wo_area = feret_msmts
 
-    measurement_names = ["Area"] + feret_msmts
-    measurement_quantities = ["area"] + feret_quantities
-    measurement_units= ["px"] + feret_units
-    measurement_scalers = [1.0*1.0] + feret_scalers
+    measurement_names = ["Area"] + feret_msmts + ["central nuclei"]
+    measurement_quantities = ["area"] + feret_quantities + ["count"]
+    measurement_units= ["px"] + feret_units + ["#"]
+    measurement_scalers = [1.0*1.0] + feret_scalers + [1.0]
 
     default_unit_and_scale = {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}}
 
@@ -92,9 +92,11 @@ class RoiMeasurements(QObject):
         if not subset_name in self.stats:
             self.stats[subset_name]={}
         rois= self.data[subset_name]["Roi"]
-        for msmt, values in self.data[subset_name].items():
-            is_a_msmt = msmt != "Roi"
-            if is_a_msmt and len(values)>0:
+        filtered = self.data[subset_name].copy()
+        filtered.pop("Roi", None)
+        self.stats[subset_name]["Roi"] = dict()
+        for msmt, values in filtered.items():
+            if len(values)>0:
                 sorted_vals = np.sort(values)
                 N = len(values)
                 med = self._custom_median(sorted_vals, 0, N)
@@ -113,21 +115,20 @@ class RoiMeasurements(QObject):
                 mean = np.mean(values)
                 stdev = np.std(values, ddof=1) if N>1 else 0
                 unit=self.units_and_scalers[msmt]["unit"]
-                
             else:
                 N = 0
                 med = 0
                 q1 = 0
                 q3 = 0
                 mad = 0
-                hist, bin_edges = [], []
+                hist, bin_edges = list(), list()
                 min_val = 0
                 max_val = 0
                 num_outliers = 0
                 outliers = np.array([], dtype=Roi)
                 mean = 0
                 stdev = 0
-                unit= self.units_and_scalers[msmt]["unit"] if is_a_msmt else ""
+                unit= self.units_and_scalers[msmt]["unit"]
             result= {
                 "mean": mean,
                 "stdev": stdev,
@@ -150,7 +151,7 @@ class RoiMeasurements(QObject):
         if subset_name and subset_name != "ALL":
             self.subset_filter[subset_name] = filter
         else:
-            log("No need to define subset ALL")
+            log("No need to define subset ALL",type="warning", log_level=1000)
 
 
     def compute_stats_subset(self, subset_name: str):
@@ -158,13 +159,14 @@ class RoiMeasurements(QObject):
         this_filter = self.subset_filter.get(subset_name, None)
         measurements = self.rm.get_measurements_by_filter(this_filter)
         if not measurements or any(len(v) == 0 for v in measurements.values()):
-            log(f"Subset '{subset_name}' returned no measurements.")
+            log(f"Subset '{subset_name}' returned no measurements.", type="info", log_level=1000)
         self.data[subset_name] = {}
         self.orig[subset_name]=measurements
         # apply the scaler "unit/px": px * unit/px = unit
         for msmt in self.measurement_names:
             magic_scaler = self.units_and_scalers[msmt]["scaler"]
             self.data[subset_name][msmt]=measurements[msmt] * magic_scaler
+
         self.data[subset_name]["Roi"]=measurements["Roi"]
         
         if subset_name=="ALL":

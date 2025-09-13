@@ -27,7 +27,7 @@ class RoiManager:
     def get_state(self, name):
         return self.states.get(name, 0)
 
-    def toggle(self, name):
+    def toggle_selection(self, name):
         log(f"[RoiManager] Toggled {name}")
 
     def delete(self, name):

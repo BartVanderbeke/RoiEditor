@@ -17,8 +17,8 @@ from io import StringIO
 import xlsxwriter
 from xlsxwriter.utility import xl_col_to_name
 
-from .Roi import Roi
-from .RoiMeasurements import *
+from Roi import Roi
+from RoiMeasurements import *
    
 def attach_extension_methods(self):
     self.save_measurements_to_csv=MethodType(save_measurements_to_csv, self)

@@ -12,9 +12,9 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 import cv2
 
-from .Roi import Roi
-from .TinyRoiManager import TinyRoiManager
-from .TinyLog import log
+from Roi import Roi
+from TinyRoiManager import TinyRoiManager
+from TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),
@@ -88,7 +88,7 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     corr = np.sqrt(1.00215)
 
     if not contours:
-        log(f"label image doen not contain contours!")
+        log(f"label image does not contain contours!", type="warning")
         return None
     for contour in contours:
         # a=cv2.contourArea(contour)
@@ -146,6 +146,10 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
             area=area
         )
         roi_array[label_value]=roi
+    # roi_0_idx=0
+    # roi_0_name =f"L{roi_0_idx:0{max_digits}d}"
+    # roi_0 = Roi(name=roi_0_name,xpoints=np.empty((0,)).astype(int),ypoints=np.empty((0,)).astype(int),state=Roi.ROI_STATE_ACTIVE)
+    # roi_array[0]=roi_0
     rm.add_from_list_unchecked(roi_array)
 
 def get_edge_labels(label_image: np.ndarray) -> np.ndarray:

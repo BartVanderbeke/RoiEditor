@@ -13,9 +13,9 @@ import numpy as np
 import cv2
 from skimage.measure import regionprops
 
-from .Roi import Roi
-from .TinyRoiManager import TinyRoiManager
-from .TinyLog import log
+from Roi import Roi
+from TinyRoiManager import TinyRoiManager
+from TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),

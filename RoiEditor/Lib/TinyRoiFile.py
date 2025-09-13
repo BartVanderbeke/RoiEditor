@@ -15,8 +15,8 @@ from typing import Final
 from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
-from .Roi import Roi
-from .TinyLog import log
+from Roi import Roi
+from TinyLog import log
 
 class TinyRoiFile:
     """
@@ -67,9 +67,13 @@ class TinyRoiFile:
         def worker(chunk):
             return [encode_roi(roi) for roi in chunk]
 
-        with ThreadPoolExecutor(max_workers=num_threads) as executor:
-            for chunk_result in executor.map(worker, chunks):
-                results.extend(chunk_result)
+        # with ThreadPoolExecutor(max_workers=num_threads) as executor:
+        #     for chunk_result in executor.map(worker, chunks):
+        #         results.extend(chunk_result)
+
+        for chunk in chunks:
+            res = [encode_roi(roi) for roi in chunk]
+            results.extend(res)
 
 
         # Step 1: construct zip in memory
@@ -83,7 +87,8 @@ class TinyRoiFile:
                 zipf.writestr(name, data)
             for roi in roi_list:
                 if roi:
-                    json_value = [Roi.state_to_str(roi.state)] + list(roi.tags)
+                    parent_name = roi.parent.name if roi.parent else "None"
+                    json_value = {"state": Roi.state_to_str(roi.state), "tags": list(roi.tags), "parent": parent_name}
                     tag_json[roi.name] = json_value
             json_data = json.dumps(tag_json)
             zipf.writestr("tags.json", json_data.encode("utf-8"))
@@ -98,19 +103,19 @@ class TinyRoiFile:
 
         # Fire & Forget: no need to wait for data to be saved
         # daemon=False --> makes sure that the thread is not stopped when the program is stopped
-        import threading
-        threading.Thread(target=save_zip, args=(zip_path, mem_zip.getvalue()), daemon=False).start()
+        #import threading
+        #threading.Thread(target=save_zip, args=(zip_path, mem_zip.getvalue()), daemon=False).start()
+        save_zip(zip_path, mem_zip.getvalue())
 
     @staticmethod
-    # works on filename without extension!
     def _is_valid_roi_name(name: str):
         return (
-            name.startswith("L") and
+            name.startswith("L") or name.startswith("N") and
             name[1:].isdigit()
         )
 
     @staticmethod
-    def _all_L_names(entry_list: list[str]):
+    def _all_L_or_N_names(entry_list: list[str]):
         return all(TinyRoiFile._is_valid_roi_name(n) for n in entry_list)
     
     @staticmethod
@@ -136,17 +141,18 @@ class TinyRoiFile:
 
 
         names = list(roi_data_dict.keys())
-        all_l =TinyRoiFile._all_L_names(names)
+        all_l_or_n =TinyRoiFile._all_L_or_N_names(names)
 
-        if all_l:
+        if all_l_or_n:
+            prefix = names[1][0]  # 'L' or 'N'
             roi_indices = [int(n[1:]) for n in names]
             max_index = np.max(roi_indices)
             l = len(names)
             if l != max_index:
-                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="error")
+                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="warning")
                 full = set(range(min(roi_indices), max(roi_indices) + 1))
-                missing = sorted(full - set(roi_indices))
-                log(f"Missing labels: {missing} ",type="error")
+                #missing = sorted(full - set(roi_indices))
+                #log(f"Missing labels: {missing} ",type="error")
             num_to_use = max(max_index,l)+1
             roi_array=np.array([None] * (num_to_use),dtype=object) #List[Optional[Roi]] = [None] * (num_to_use)
 
@@ -157,9 +163,20 @@ class TinyRoiFile:
                     idx = int(roi_name[1:]) # number
                     roi_array[idx] = roi
                     values = tag_json.get(roi_name, None)
-                    if values:
+
+                    roi.parent = None
+                    roi.children = list()
+
+                    if isinstance(values, list):
                         roi.state = Roi.str_to_state(values[0])
                         roi.tags = set(values[1:])
+                    elif isinstance(values, dict):
+                        # {"state": Roi.state_to_str(roi.state), "tags": list(roi.tags), "parent": parent_name}
+                        roi.state = Roi.str_to_state(values.get("state", Roi.ROI_STATE_ACTIVE))
+                        roi.tags = set(values.get("tags", []))
+                        _parent = values.get("parent", None)
+                        roi.parent = _parent if _parent and _parent != "None" else None
+                        #roi.children = values.get("children", [])
             else:
                 for roi_name in names:
                     data = roi_data_dict[roi_name]
@@ -167,10 +184,12 @@ class TinyRoiFile:
                     idx = int(roi_name[1:])
                     roi_array[idx] = roi
         else:
-            roi_dict = {}
+            roi_dict = dict()
             for name in names:
                 data = roi_data_dict[name]
                 roi: Roi = TinyRoiFile._decode(data,name)
+                roi.parent = None
+                roi.children = list()
                 (cx,cy) = (roi.center)
                 idx = label_image[int(cy),int(cx)]
                 roi_dict[idx] = roi

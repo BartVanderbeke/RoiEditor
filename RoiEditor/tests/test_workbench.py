@@ -34,7 +34,7 @@ def test_workbench():
 
     bench = Workbench(original_file, label_file, roi_file, key_to_label_map,parent = dummy)
     window=bench.build()
-    rm = bench.rm
+    rm = bench.cell_rm
 
 
     l= [Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED, Roi.ROI_STATE_DELETED,Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_SELECTED,Roi.ROI_STATE_DELETED,Roi.ROI_STATE_ACTIVE]

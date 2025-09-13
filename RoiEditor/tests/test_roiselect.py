@@ -34,24 +34,24 @@ def test_roiselect():
 
     bench = Workbench(original_file, label_file, roi_file, key_to_label_map)
     window=bench.build()
-    select_outer_rois_vdb(bench.rm, step =1)
+    select_outer_rois_vdb(bench.cell_rm, step =1)
     window.draw_image()
 
     bench2 = Workbench(original_file, label_file, roi_file, key_to_label_map)
     window2=bench2.build()
-    select_outer_rois_vdb3(bench2.rm, step = 1)
+    select_outer_rois_vdb3(bench2.cell_rm, step = 1)
     window2.draw_image()
 
     bench3 = Workbench(original_file, label_file, roi_file, key_to_label_map)
     window3=bench3.build()
-    select_outer_rois_vdb4(bench3.rm, step = 1)
+    select_outer_rois_vdb4(bench3.cell_rm, step = 1)
     window3.draw_image()
 
     bench5 = Workbench(original_file, label_file, roi_file, key_to_label_map)
     window5=bench5.build()
     label_image = cv2.imread(label_file,cv2.IMREAD_UNCHANGED)
     StopWatch.start("detect edge")
-    select_outer_rois_vdb5(bench5.rm,label_image)
+    select_outer_rois_vdb5(bench5.cell_rm,label_image)
     StopWatch.stop("detect edge")
     window5.draw_image()
 
