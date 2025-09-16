@@ -40,3 +40,4 @@ RoiEditor allows labeling the deleted ROIs with the reason of their deletion. Wh
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
 <img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="600"/>
 
+
