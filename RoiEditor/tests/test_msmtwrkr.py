@@ -5,19 +5,21 @@ import numpy as np
 import cv2
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import  QTimer
+import random
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
-from RoiEditor.Lib.StopWatch import StopWatch
+from TinyRoiManager import TinyRoiManager
+from TinyRoiFile import TinyRoiFile
+from StopWatch import StopWatch
 
-from RoiEditor.Lib.Context import gvars
-from RoiEditor.Lib.Roi import Roi
-from RoiEditor.Lib.HistogramFrame import HistogramFrame
-from RoiEditor.Lib.RoiMeasurements import RoiMeasurements
-from RoiEditor.Lib.TinyLog import log
-from RoiEditor.Lib.MeasurementWorker import compute_and_plot
+
+from Roi import Roi
+from HistogramFrame import HistogramFrame
+from RoiMeasurements import RoiMeasurements
+from TinyLog import log
+from MeasurementWorker import compute_and_plot
 
 
 def test_msmtwrkr():
@@ -45,7 +47,7 @@ def test_msmtwrkr():
     msmts = RoiMeasurements(rm)
     compute_and_plot(rm,hist_plot,msmts=msmts)
     log("First round finished, waiting for updates (every 5s)")
-    import random
+
 
     l=[Roi.ROI_STATE_ACTIVE,Roi.ROI_STATE_SELECTED]
     

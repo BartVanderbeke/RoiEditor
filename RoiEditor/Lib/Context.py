@@ -16,16 +16,17 @@ from TinyLog import TinyLog
 # the ROIs are deleted and the ROIs are tagged with the justification for the deletion: "freeze",...
 # F1 cannot be allocated, F2...F12 can be allocated
 
-key_to_label_map: dict[str,str] = { "F5" : "freeze",            # all but the last line must end with comma
-                                    "F6" : "fold",
-                                    "F7" : "vessel",
-                                    "F9" : "section.tear",
-                                    "F10": "section.stretch"    # last line must not end with comma  
+key_to_label_map: dict[str,str] = { "F5" : "DELETED.freeze",            # all but the last line must end with comma
+                                    "F6" : "DELETED.fold",
+                                    "F7" : "DELETED.vessel",
+                                    "F9" : "DELETED.section.tear",
+                                    "F10": "DELETED.section.stretch"    # last line must not end with comma
 }
 
 # gvars contains global variables
 # 1. settings
 # 2. global values (that still need to be moved to clean params)
+
 gvars: dict[str, Any] = {}
 gvars["show_names"]=True        # (do not) show the names of the ROIs on the image
 gvars["show_deleted"]=True      # (do not) show the deleted ROIs on the image
@@ -45,3 +46,4 @@ gvars["roi_minimum_size_range"] = { "minval": 49,  "default": 100, "maxval": 499
 # the regex used for custom_scale limits to >1e-6 automatically
 gvars["custom_scale_range"] = { "minval": 1e-6,  "default": 0.917491, "maxval": 50.0} # micron/pixel
  
+

@@ -13,18 +13,19 @@ from PyQt6.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
 
 from RoiMeasurements import RoiMeasurements
 from TinyLog import log
-from Context import gvars
 from Roi import Roi
 from HistogramFrame import HistogramFrame
 from TinyRoiManager import TinyRoiManager
 
 
 def calculate_measurements(msmts: RoiMeasurements):
-        if not msmts.subset_all_calculated:
-            log("First calculation of measurements started", type="info", log_level=1000)
-            msmts.compute_stats_subset(subset_name="ALL")
-        else:
-            log("Re-calculation of measurements started", type="info", log_level=1000)
+        #if not msmts.subset_all_calculated:
+        #    log("First calculation of measurements started", type="info", log_level=1000)
+            #msmts.compute_stats_subset(subset_name="ALL")
+        #else:
+        msmts.compute_stats_subset(subset_name="ALL")
+        log("(Re)calculation of measurements started", type="info", log_level=1000)
+
         subset_name = "DELETED"
         filter = lambda roi: (roi.state == Roi.ROI_STATE_DELETED) if roi else False
         msmts.define_subset(subset_name=subset_name, filter=filter)
@@ -72,6 +73,6 @@ def compute_and_plot(rm: TinyRoiManager,hist_plot:HistogramFrame, msmts: RoiMeas
     worker.signals.finished.connect(on_worker_done)
 
     QThreadPool.globalInstance().start(worker)
-    #calculate_measurements(msmts)
-    #on_worker_done(msmts)
+    # calculate_measurements(msmts)
+    # on_worker_done(msmts)
 

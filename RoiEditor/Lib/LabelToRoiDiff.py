@@ -17,9 +17,9 @@ from TinyRoiManager import TinyRoiManager
 from TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
-        1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),
-        2: (Roi.ROI_STATE_DELETED,set(["small"])),
-        3: (Roi.ROI_STATE_DELETED, set(["edge.image"]))
+        1: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"])),
+        2: (Roi.ROI_STATE_DELETED,set(["DELETED.small"])),
+        3: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"]))
 }
 
 def remove_internal_edges(label_img):

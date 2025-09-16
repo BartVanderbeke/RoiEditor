@@ -9,9 +9,9 @@ import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from RoiEditor.Lib.TinyLog import log
-from RoiEditor.Lib.RectangleSelectorView import RectangleSelectorView
-from RoiEditor.Lib.MouseListener import ROIClickListener
+from TinyLog import log
+from RectangleSelectorView import RectangleSelectorView
+from MouseListener import ROIClickListener
 
 class RoiManager:
     ROI_STATE_DELETED = -1

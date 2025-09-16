@@ -4,15 +4,16 @@ import numpy as np
 import cv2
 from PyQt6.QtWidgets import QApplication,QWidget
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from RoiEditor.Lib.Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
+from Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info
 
-from RoiEditor.Lib.RoiMeasurements import RoiMeasurements
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.Roi import Roi
+from RoiMeasurements import RoiMeasurements
+from TinyRoiFile import TinyRoiFile
+from StopWatch import StopWatch
+from TinyRoiManager import TinyRoiManager
+from Roi import Roi
 
-from RoiEditor.Lib.HistogramFrame import HistogramFrame
+from HistogramFrame import HistogramFrame
 
 def test_hist():
     app = QApplication(sys.argv)
@@ -22,7 +23,7 @@ def test_hist():
     test_path = os.path.join(base_path, "TestData")+'/'
 
 
-    base_name=test_path+"A_stitch"
+    base_name=test_path+"B_stitch"
     zip_path = base_name+"_rois.zip"
     zip_out_path = base_name+"_RoiSet.zip"
     label_path = base_name+"_cp_masks.png"

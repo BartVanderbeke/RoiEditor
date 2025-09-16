@@ -9,11 +9,12 @@ import matplotlib.pyplot as plt
 import math
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.LabelToRoiDiff import process_label_image
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.Roi import Roi
+from TinyRoiManager import TinyRoiManager
+from LabelToRoiDiff import process_label_image
+from StopWatch import StopWatch
+from Roi import Roi
 
 
 def show_contours(contours):
@@ -61,14 +62,20 @@ def test_labeltoroidiff():
     StopWatch.start("dummy")
     StopWatch.stop("dummy")
     rm = TinyRoiManager()
-    label_image_path = test_path+"A_stitch_cp_masks.png"
+    label_image_path = test_path+"B_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
+    print(np.unique(label_image))
     StopWatch.start("Detection starting")
     process_label_image(rm, label_image)
     StopWatch.stop("Detection")
 
     rois = list(rm.iter_all())
     last_3= rois[-3:]
+    for name,roi in rm.iter_all():
+        if roi:
+            print(roi.name,(int(roi.center[0]),int(roi.center[1])),label_image[int(roi.center[1]), int(roi.center[0])])
+
+
 
     label_image_path = test_path+"B_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)

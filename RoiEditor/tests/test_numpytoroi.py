@@ -3,15 +3,16 @@ import sys
 import numpy as np
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.NumpyToRoi import process_label_image
-from RoiEditor.Lib.StopWatch  import StopWatch
+from TinyRoiManager import TinyRoiManager
+from NumpyToRoi import process_label_image
+from StopWatch  import StopWatch
 
 def  test_numpytoroi():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
-    npy_path = test_path+'A_stitch_seg.npy'
+    npy_path = test_path+'B_stitch_seg.npy'
 
     StopWatch.start("dummy")
     StopWatch.stop("dummy")

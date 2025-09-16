@@ -7,14 +7,16 @@ from PyQt6.QtWidgets import QApplication
 import matplotlib.pyplot as plt
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.Context import gvars
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.RoiMeasurements import RoiMeasurements
-from RoiEditor.Lib.TinyLog import log
-from RoiEditor.Lib.Roi import Roi
+import Context
+from TinyRoiFile import TinyRoiFile
+from StopWatch import StopWatch
+from TinyRoiManager import TinyRoiManager
+from RoiMeasurements import RoiMeasurements
+from MsmtToFile import save_measurements_to_csv
+from TinyLog import log
+from Roi import Roi
 
 def test_msmts():
     app = QApplication(sys.argv)

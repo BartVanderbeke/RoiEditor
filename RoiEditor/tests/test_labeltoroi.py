@@ -9,11 +9,12 @@ import matplotlib.pyplot as plt
 import math
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.LabelToRoi import process_label_image
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.Roi import Roi
+from TinyRoiManager import TinyRoiManager
+from LabelToRoi import process_label_image
+from StopWatch import StopWatch
+from Roi import Roi
 
 
 def show_contours(contours):

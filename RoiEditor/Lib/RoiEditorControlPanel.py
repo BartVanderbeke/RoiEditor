@@ -23,16 +23,18 @@ from PyQt6 import uic
 from pathlib import Path
 
 from FileChoosers import find_related_filenames
-from Context import gvars, key_to_label_map
+import Context
+#from Context import Context.gvars, Context.key_to_label_map
 
 from Crumbs import normalize_path
 
-from Workbench import Workbench
+from Workbench import Workbench#
 from TinyLog import log
 from Exif import retrieve_tiff_image_info
 #from InputValidation import attach_extension_methods
 from Stylesheet import *
 from Crumbs import format_float
+from RoyalKeyInterceptor import RoyalKeyInterceptor
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
@@ -88,7 +90,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.bg_unit.addButton(self.rb_pixel_is_unit, id=self.ID_PIXEL)
         self.bg_unit.addButton(self.rb_unit_from_file, id=self.ID_FROM_FILE)
         self.bg_unit.addButton(self.rb_unit_specified, id=self.ID_SPECIFIED)
-        self.le_custom_scale.setText(str(gvars["custom_scale_range"]["default"]))
+        self.le_custom_scale.setText(str(Context.gvars["custom_scale_range"]["default"]))
         self.scalers= {self.ID_PIXEL: {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}, "source": "no scaler/unit selected"},
                       self.ID_FROM_FILE: {"length": {"scaler": None, "unit": "µm"},"area": {"scaler": None, "unit": "µm²"}, "source": "read from image"},
                       self.ID_SPECIFIED: {"length": {"scaler": None, "unit": "µm"},"area": {"scaler": None, "unit": "µm²"}, "source": "set by user"},
@@ -165,7 +167,7 @@ class RoiEditorControlPanel(QMainWindow):
     def handle_toggle(self,toggle_str:str):
         this_toggle=self.toggles[toggle_str]
         is_checked =this_toggle["checked"]()
-        gvars[this_toggle["setting"]]=is_checked
+        Context.gvars[this_toggle["setting"]]=is_checked
         if not self.workbench:
             return
         this_toggle["action"]()        
@@ -238,7 +240,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.label_hint = None
         selected_file,hint = self.original_chooser.showDialog()
         if selected_file:
-            other_files = find_related_filenames(selected_file)
+            label_file, zip_file = find_related_filenames(selected_file)
             self.accept_name(for_which="org",value=selected_file)
 
             txt = 'unknown'
@@ -249,12 +251,14 @@ class RoiEditorControlPanel(QMainWindow):
                     txt=str(physical_size_x)
             self.le_scale_from_file.setText(txt)
 
-            self.label_hint = hint or other_files[0]
+            self.label_hint = hint or label_file
             if self.label_hint:
                 self.accept_name(for_which="label",value=self.label_hint)
-            self.zip_hint = other_files[1]
+            self.zip_hint = zip_file
             if self.zip_hint:
                 self.accept_name(for_which="zip",value=self.zip_hint)
+            else:
+                self.reset_filename(for_which="zip")
             
 
     def on_click_browse_label(self):
@@ -324,7 +328,7 @@ class RoiEditorControlPanel(QMainWindow):
                                    nuke_roi_file=path_str_nuke_zip,
                                    on_fail_to_write=self.on_cannot_write_to_file,
                                    on_fail_to_build=self.on_fail_to_build,
-                                   key_to_label_map=key_to_label_map,parent=self)
+                                   key_to_label_map=Context.key_to_label_map,parent=self)
         self.workbench.build()
 
 
@@ -398,25 +402,29 @@ class RoiEditorControlPanel(QMainWindow):
         msg.exec() # modal
 
     def collect_and_report_settings(self):
-        log("Original:", self.file["org"]["name"], type="info")
-        log("Label:", self.file["label"]["name"],type="info")
-        log("Zip:", self.file["zip"]["name"], type="info")
-        gvars["remove_at_edge"]=self.cbEdge.isChecked()
-        gvars["remove_small"]=self.cbSmall.isChecked()
-        log("Remove at edge?", gvars["remove_at_edge"], type="info")
-        log("Remove small?", gvars["remove_small"], type="info")
-        log("Min size:", gvars["roi_minimum_size"], type="info")
+        path_org = Path(self.file["org"]["name"])
+        path_lbl = Path(self.file["label"]["name"]) 
+        path_zip = Path(self.file["zip"]["name"])
+        log(f"Original: {path_org.name} in folder {path_org.parent}", type="info")
+        log(f"Label: {path_lbl.name} in folder {path_lbl.parent}", type="info")
+        log(f"Zip: {path_zip.name} in folder {path_zip.parent}", type="info")
+        Context.gvars["remove_at_edge"]=self.cbEdge.isChecked()
+        Context.gvars["remove_small"]=self.cbSmall.isChecked()
+        log("Remove at edge?", Context.gvars["remove_at_edge"], type="info")
+        log("Remove small?", Context.gvars["remove_small"], type="info")
+        log("Min size in pixels:", Context.gvars["roi_minimum_size"], type="info")
         # {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}, "source": "no scaler/unit selected"},
-        log(gvars["selected_unit_and_scale"], type="info")
+        log(Context.gvars["selected_unit_and_scale"], type="info")
+
 
     def connect_all_handlers(self):
-        self.cb_show_names.setChecked(gvars["show_names"])
-        self.cb_show_deleted.setChecked(gvars["show_deleted"])
-        self.cbEdge.setChecked(gvars["remove_at_edge"])
-        self.cbSmall.setChecked(gvars["remove_small"])
-        #self.cbPixel.setChecked(gvars["force_pixel_as_unit"])
-        self.tbSize.setText(str(gvars["roi_minimum_size"]))
-        self.cb_show_overlay.setChecked(gvars["show_overlay"])        
+        self.cb_show_names.setChecked(Context.gvars["show_names"])
+        self.cb_show_deleted.setChecked(Context.gvars["show_deleted"])
+        self.cbEdge.setChecked(Context.gvars["remove_at_edge"])
+        self.cbSmall.setChecked(Context.gvars["remove_small"])
+        #self.cbPixel.setChecked(Context.gvars["force_pixel_as_unit"])
+        self.tbSize.setText(str(Context.gvars["roi_minimum_size"]))
+        self.cb_show_overlay.setChecked(Context.gvars["show_overlay"])        
         self.btn_browse_original.clicked.connect(self.on_click_browse_original)
         self.btn_clear_original.clicked.connect(self.on_click_clear_original)
         self.btn_browse_label.clicked.connect(self.on_click_browse_label)
@@ -444,7 +452,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.tbSize.textChanged.connect(self.remove_small_validate)
 
     def set_up_key_interceptor(self):
-        from .RoyalKeyInterceptor import RoyalKeyInterceptor
+        
         name_to_code = {    "F2" : Qt.Key.Key_F2,
                             "F3" : Qt.Key.Key_F3,
                             "F4" : Qt.Key.Key_F4,
@@ -462,7 +470,7 @@ class RoiEditorControlPanel(QMainWindow):
                                         Qt.Key.Key_Delete: (self.on_delete_key_pressed,None, True),
                                         Qt.Key.Key_F1: (self.on_f1_key_pressed,None, True)
             }
-        for name,label in key_to_label_map.items():
+        for name,label in Context.key_to_label_map.items():
             interceptor_key_action[name_to_code[name]] = (self.on_tagged_delete,label,True)
 
         self.interceptor = RoyalKeyInterceptor(mapping=interceptor_key_action,parent=self)
@@ -471,7 +479,7 @@ class RoiEditorControlPanel(QMainWindow):
 
     def is_custom_scale_valid(self: 'RoiEditorControlPanel'):
         text= self.le_custom_scale.text()
-        rng =gvars["custom_scale_range"]
+        rng =Context.gvars["custom_scale_range"]
         minval = rng["minval"]
         maxval = rng["maxval"]
         fallback = rng["default"]
@@ -479,7 +487,7 @@ class RoiEditorControlPanel(QMainWindow):
 
     def is_remove_small_valid(self: 'RoiEditorControlPanel'):
         text = self.tbSize.text()
-        rng =gvars["roi_minimum_size_range"]
+        rng =Context.gvars["roi_minimum_size_range"]
         minval = rng["minval"]
         maxval = rng["maxval"]
         fallback = rng["default"]
@@ -509,7 +517,7 @@ class RoiEditorControlPanel(QMainWindow):
 
         if not (ok_min_size and ok_custom_scale and ok_from_file):
             log("Invalid values in 'Unit & Scale' or 'Process Labels'",type="error")
-            gvars["selected_unit_and_scale"] = None
+            Context.gvars["selected_unit_and_scale"] = None
             msgbox = MessageBoxInvalidValues(self)
             _ = msgbox.exec()
             return False # go back
@@ -529,8 +537,8 @@ class RoiEditorControlPanel(QMainWindow):
         self.scalers[self.ID_SPECIFIED]["area"]["scaler"]=scaler_area
 
 
-        gvars["roi_minimum_size"]=min_size
-        gvars["selected_unit_and_scale"]=self.scalers[checked_id]
+        Context.gvars["roi_minimum_size"]=min_size
+        Context.gvars["selected_unit_and_scale"]=self.scalers[checked_id]
         return True # move on
 
     @staticmethod

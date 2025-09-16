@@ -5,9 +5,10 @@ from PyQt6.QtWidgets import QApplication, QLabel,QMainWindow
 from PyQt6.QtCore import Qt
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
 
-from RoiEditor.Lib.RoyalKeyInterceptor import RoyalKeyInterceptor
+from RoyalKeyInterceptor import RoyalKeyInterceptor
 
 
 def test_keyinterceptor():

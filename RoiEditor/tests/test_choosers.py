@@ -3,8 +3,10 @@ import sys
 from PyQt6.QtWidgets import QApplication,QWidget
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from RoiEditor.Lib.Stylesheet import overall
-from RoiEditor.Lib.FileChoosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
+
+from Stylesheet import overall
+from FileChoosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
 
 def test_choosers():
     app = QApplication(sys.argv)

@@ -3,10 +3,11 @@ import sys
 import numpy as np
 import cv2
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.Feret import feret_msmts,get_values,get_values2
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
+from Feret import feret_msmts,get_values,get_values2
+from StopWatch import StopWatch
+from TinyRoiFile import TinyRoiFile
 
 def test_feret():
     base_path = os.path.dirname(__file__)
@@ -19,7 +20,7 @@ def test_feret():
     num_threads = 12
 
 
-    base_name = test_path+"A_Stitch"
+    base_name = test_path+"B_Stitch"
     zip_path = base_name + "_rois.zip"
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
@@ -31,8 +32,8 @@ def test_feret():
     StopWatch.start("Feret")
     for roi in rois:
         if roi:
-            xpoints = roi.xpoints
-            ypoints = roi.ypoints
+            xpoints = roi._xpoints
+            ypoints = roi._ypoints
             set1 = get_values(xpoints, ypoints)
             results.append([roi.name] + list(set1))
             #print(roi.name + ": ", set1)
@@ -48,7 +49,7 @@ def test_feret():
 
     print(f"CSV saved to {csv_path}")
 
-    base_name = test_path+"A_Stitch"
+    base_name = test_path+"B_Stitch"
     zip_path = base_name + "_rois.zip"
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
@@ -60,8 +61,8 @@ def test_feret():
     StopWatch.start("Feret")
     for roi in rois:
         if roi:
-            xpoints = roi.xpoints
-            ypoints = roi.ypoints
+            xpoints = roi._xpoints
+            ypoints = roi._ypoints
             set1 = get_values2(xpoints, ypoints)
             results.append([roi.name] + list(set1))
             #print(roi.name + ": ", set1)

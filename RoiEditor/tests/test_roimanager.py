@@ -4,17 +4,18 @@ import numpy as np
 import cv2
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile as TRF
-from RoiEditor.Lib.StopWatch import StopWatch
+from TinyRoiManager import TinyRoiManager
+from TinyRoiFile import TinyRoiFile as TRF
+from StopWatch import StopWatch
 
 
 def test_roimanager():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
 
-    base_name=test_path+"A_Stitch"
+    base_name=test_path+"B_Stitch"
     zip_path = base_name+"_rois.zip"
     zip_out_path = base_name+"_RoiSet.zip"
     label_path = base_name+"_cp_masks.png"

@@ -42,7 +42,7 @@ class TinyRoiManager(QObject):
         self.prefix = prefix
 
     @staticmethod
-    def is_valid(rm: "TinyRoiManager"):
+    def has_rois(rm: "TinyRoiManager"):
         return rm is not None and len(rm._name_to_roi)>0
 
     @property
@@ -50,6 +50,8 @@ class TinyRoiManager(QObject):
         return len(self._name_to_roi)
     
     def first_free_name(self) -> str:
+        if self._name_to_roi == {}:
+            return f"{self.prefix}0001"
         max_key_str = max(self._name_to_roi.keys(), key=lambda k: int(k[1:]))
         first_free = int(max_key_str[1:]) + 1
         name = self.idx_to_name(first_free)
@@ -274,11 +276,12 @@ class TinyRoiManager(QObject):
     def force_feret(self):
         for roi in self._name_to_roi.values():
 
-            roi.feret_values=get_values(roi.xpoints, roi.ypoints)
+            roi.feret_values=get_values(roi._xpoints, roi._ypoints)
             #_ = roi.feret_values
         
     def idx_to_name(self,idx) -> str:
-        max_digits: int = len(str(self.num_of_rois))
+        key = next(iter(self._name_to_roi), "X0000")
+        max_digits: int = len(key)-1
         return f"{self.prefix}{idx:0{max_digits}d}"
     
     def name_to_idx(name: str) -> int:

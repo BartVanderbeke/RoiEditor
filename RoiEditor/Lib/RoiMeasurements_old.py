@@ -14,18 +14,14 @@ import numpy as np
 from typing import Union
 from typing import Callable,Any
 from PyQt6.QtGui import QBrush
-from sympy import true
 
-from Roi import Roi
+from .Roi import Roi
 
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from TinyLog import log
-from TinyColor import values_to_qbrush_dict
-from Feret import feret_msmts,feret_quantities,feret_units,feret_scalers
+from .TinyLog import log
+from .TinyColor import map_values_to_qbrush
+from .Feret import feret_msmts,feret_quantities,feret_units,feret_scalers
 
-from MsmtToFile import attach_extension_methods
-
-
+from .MsmtToFile import attach_extension_methods
 
 from PyQt6.QtCore import QObject
 class RoiMeasurements(QObject):
@@ -33,41 +29,27 @@ class RoiMeasurements(QObject):
         calculates the measurement values, calculates statistics
         saves the numbers to a .csv file
     """
+    measurement_names_wo_area = feret_msmts
 
+    measurement_names = ["Area"] + feret_msmts + ["central nuclei"]
+    measurement_quantities = ["area"] + feret_quantities + ["count"]
+    measurement_units= ["px"] + feret_units + ["#"]
+    measurement_scalers = [1.0*1.0] + feret_scalers + [1.0]
 
     default_unit_and_scale = {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}}
 
-    def __init__(self,
-                 cell_rm: TinyRoiManager,
-                 nuke_rm: TinyRoiManager | None =None,
-                 num_bins: int=20,
-                 unit_and_scale: dict[str, Union[str, float]] | None =None,
-                 parent=None):
+    def __init__(self, rm, delayed_compute=False,num_bins=20,unit_and_scale: dict[str, Union[str, float]]=None, parent=None):
         super().__init__(parent)
-
-        self.nuke_rm=nuke_rm
-        self.measurement_names_wo_area = feret_msmts
-        self.measurement_names = ["Area"] + feret_msmts
-        self.measurement_quantities = ["area"] + feret_quantities
-        self.measurement_units= ["px"] + feret_units
-        self.measurement_scalers = [1.0*1.0] + feret_scalers
-        if self.nuke_rm is not None:
-            self.measurement_names_wo_area += ["central nuclei"]
-            self.measurement_names += ["central nuclei"]
-            self.measurement_quantities += ["count"]
-            self.measurement_units += ["#"]
-            self.measurement_scalers += [1.0]
-
         self.num_bins = num_bins
-        self.rm = cell_rm
+        self.rm = rm
         # data may be modified e.g. by applying a unit
         self.data: dict[str, dict[str, np.ndarray]] ={} # subset  --> {measurement_name -> np.array()}
-        # orig remains untouched: always in pixels, necessary when saving to file
+        # orig remains untouched: always in pixels
         self.orig: dict[str, dict[str, np.ndarray]] ={} # subset  --> {measurement_name -> np.array()}
-        self.minmax: dict[str, dict[str, tuple[float,float]]] ={} # subset  --> {measurement_name -> (min,max)}
-
-        #self.distance: dict[str, dict[str, np.ndarray]] ={} # subset  --> {measurement_name -> np.array()}
+        self.distance: dict[str, dict[str, np.ndarray]] ={} # subset  --> {measurement_name -> np.array()}
+        #self.all={"data": self.data, "distance" : self.distance}
         self.stats: dict[str, dict[str, dict[str,Any]]] = {} # subset  --> {measurement_name -> {stat  --> value}}
+        self.idx: dict[str,dict[str,Roi]] ={}
         from PyQt6.QtGui import QBrush
         self.qbrush: dict[str, dict[str, QBrush]] = {} # subset  --> {measurement_name -> QBrush}
         self.subset_filter: dict[str, Callable[[Roi], bool]] = {"ALL": (lambda roi: True)}
@@ -84,10 +66,18 @@ class RoiMeasurements(QObject):
 
         attach_extension_methods(self)
 
+        self._subset_all_calculated=False
+        if delayed_compute:
+            return
+        self.compute_stats_subset(subset_name="ALL")
 
     @classmethod
     def is_valid(cls,msmts: "RoiMeasurements"):
         return msmts is not None and msmts.data is not None and msmts.stats is not None
+
+    @property
+    def subset_all_calculated(self):
+        return self._subset_all_calculated
 
     def _custom_median(self, sorted_values, start, end):
         count = end - start
@@ -113,7 +103,7 @@ class RoiMeasurements(QObject):
                 q1 = self._custom_median(sorted_vals, 0, N // 2)
                 q3 = self._custom_median(sorted_vals, (N + 1) // 2, N)
                 mad = self._custom_median(np.sort(np.abs(values - med)), 0, N)
-                hist, bin_edges = np.histogram(a=values, bins=self.num_bins,range=self.minmax["ALL"][msmt])
+                hist, bin_edges = np.histogram(a=values, bins=self.num_bins,range=self.minmax[msmt])
                 min_val = np.min(values)
                 max_val = np.max(values)
                 iqr =  q3 - q1
@@ -168,48 +158,42 @@ class RoiMeasurements(QObject):
 
         this_filter = self.subset_filter.get(subset_name, None)
         measurements = self.rm.get_measurements_by_filter(this_filter)
-        self.data[subset_name] = {}
-        self.orig[subset_name]=measurements # do not discard, needed when saving to file        
-        self.minmax[subset_name]= { msmt : (0,0) for msmt in self.measurement_names}
-        self.qbrush[subset_name]= {}
-
-        empty_measurements = [v.size for v in measurements.values() if v.size==0]
-        if not measurements or len(empty_measurements)>0:
+        if not measurements or any(len(v) == 0 for v in measurements.values()):
             log(f"Subset '{subset_name}' returned no measurements.", type="info", log_level=1000)
-
-
-
-        #self.orig[subset_name]=measurements
+        self.data[subset_name] = {}
+        self.orig[subset_name]=measurements
         # apply the scaler "unit/px": px * unit/px = unit
         for msmt in self.measurement_names:
-            magic_scaler = self.units_and_scalers[msmt]["scaler"]
-            self.data[subset_name][msmt]=measurements[msmt] * magic_scaler
+            log(f"Applying scaler for {msmt}: {self.units_and_scalers[msmt]}")
+            try:
+                magic_scaler = self.units_and_scalers[msmt]["scaler"]
+                self.data[subset_name][msmt]=measurements[msmt] * magic_scaler
+            except Exception as e:
+                log(f"Error retrieving scaler for {msmt}: {e}. Using 1.0 as default.", type="error")
+
 
         self.data[subset_name]["Roi"]=measurements["Roi"]
-
-        #print(f"Subset '{subset_name}' has {len(self.data[subset_name]['Roi'])} ROIs.")
-        if len(self.data[subset_name]['Roi'])>0:
-            self.minmax[subset_name]={ msmt : (np.min(self.data[subset_name][msmt]),np.max(self.data[subset_name][msmt])) for msmt in self.measurement_names}
-
-        self._compute_stats(subset_name)
         
+        if subset_name=="ALL":
+            self.idx[subset_name]= {roi : idx for idx,roi in enumerate(self.data[subset_name]["Roi"])}
+            self.minmax={ msmt : (np.min(self.data["ALL"][msmt]),np.max(self.data["ALL"][msmt])) for msmt in self.measurement_names}
+            self._subset_all_calculated=True
+            length = len(self.data[subset_name]["Area"])
+            self.qbrush[subset_name]= {}
+            self.distance[subset_name] = {}
+            self._compute_stats(subset_name)
+            for msmt in self.measurement_names:
+                self.qbrush[subset_name][msmt] = np.array([QBrush()] * length, dtype=object)
+                range = 1.5 * (self.stats[subset_name][msmt]["q3"]-self.stats[subset_name][msmt]["q1"])
+                self.distance[subset_name][msmt] = np.clip(np.abs(self.data[subset_name][msmt] - self.stats[subset_name][msmt]["median"]),0.0,range)
+                vmin= np.min(self.distance[subset_name][msmt])
+                vmax = np.max(self.distance[subset_name][msmt])
+                map_values_to_qbrush(values=self.distance[subset_name][msmt],
+                                      qbrush=self.qbrush[subset_name][msmt],
+                                      vmin=vmin,
+                                      vmax=vmax)
+            
 
-        #self.distance[subset_name] = {}
+        else:
+            self._compute_stats(subset_name)
 
-        for msmt in self.measurement_names:
-            data = self.data[subset_name][msmt]
-            stats = self.stats[subset_name][msmt]
-
-            iqr = stats["q3"] - stats["q1"]
-            max_range = 1.5 * iqr
-            dist = np.clip(np.abs(data - stats["median"]), 0.0, max_range)
-            #self.distance[subset_name][msmt] = dist
-
-            if dist.size == 0 or np.all(dist == 0):
-                log(f"Values for measurement {msmt} missing or all zeros", type="info", log_level=1000)
-                vmin, vmax = 0.0, 0.0
-            else:
-                vmin, vmax = dist.min(), dist.max()
-
-            rois = self.data[subset_name]["Roi"]
-            self.qbrush[subset_name][msmt] = values_to_qbrush_dict(rois=rois, values=dist, vmin=vmin, vmax=vmax)

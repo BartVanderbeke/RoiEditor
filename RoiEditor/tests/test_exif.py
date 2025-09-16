@@ -1,7 +1,8 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-from RoiEditor.Lib.Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info, update_ome_metadata_from_json
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
+from Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info, update_ome_metadata_from_json
 import tifffile
 
 def test_exif():

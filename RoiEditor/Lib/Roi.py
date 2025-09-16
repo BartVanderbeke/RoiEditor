@@ -39,8 +39,8 @@ class Roi:
                  ):
 
         assert len(xpoints) == len(ypoints), "Aantal x- en y-punten moet gelijk zijn"
-        self.xpoints: npt.NDArray[np.int_] = xpoints
-        self.ypoints: npt.NDArray[np.int_] = ypoints
+        self._xpoints: npt.NDArray[np.int_] = xpoints
+        self._ypoints: npt.NDArray[np.int_] = ypoints
         self.name: str = name if name is not None else ""
         self.state: int | None = state
         self.tags: set[str] = set(tags) if tags else set()
@@ -51,16 +51,62 @@ class Roi:
         self._bounds: Tuple[int, int, int, int] | None = bounds
         self._area: float | None = area
         self._center: Tuple[float, float] | None = center
-        self.n: int | None = n
+        self._n: int | None = n
+        self.color =None
 
         if n is None and xpoints is not None:
-            self.n: int = len(xpoints)
+            self._n = len(xpoints)
+
+    @property
+    def n(self):
+        if self._n is None or self._xpoints is None or self._ypoints is None:
+            self._n = None
+        else:
+            self._n = len(self._xpoints)
+        return self._n
+
+
+    @property
+    def xpoints(self):
+        return self._xpoints
+
+    @property
+    def ypoints(self):
+        return self._ypoints
+
+    @xpoints.setter
+    def xpoints(self, value):
+        self._xpoints = value
+        if self._xpoints is not None and self._ypoints is not None:
+            assert len(self._xpoints) == len(self._ypoints), "xpoints and yppoints must have the same length"
+        self._n = None
+        self._feret_values = None
+        self._bounds = None
+        self._area = None
+        self._center = None
+    
+
+    @ypoints.setter
+    def ypoints(self, value):
+        self._ypoints = value
+        if self._xpoints is not None and self._ypoints is not None:
+            assert len(self._xpoints) == len(self._ypoints), "xpoints and yppoints must have the same length"
+        self._n = None
+        self._feret_values = None
+        self._bounds = None
+        self._area = None
+        self._center = None
+
 
     @property
     def area(self) -> float:
+        if self._xpoints is None or self._ypoints is None:
+            self._area = None
+            return self._area
+        assert self._xpoints is not None and self._ypoints is not None
         if self._area is None:
-            x = np.asarray(self.xpoints)
-            y = np.asarray(self.ypoints)
+            x = np.asarray(self._xpoints)
+            y = np.asarray(self._ypoints)
             R1= np.dot(x, np.roll(y, 1))
             R2= np.dot(y, np.roll(x, 1))
             self._area = 0.5 * np.abs( R1-R2 )
@@ -70,21 +116,21 @@ class Roi:
     def bounds(self) -> Tuple[int, int, int, int]:
         if self._bounds is None:
             #(top, left, bottom, right)
-            self._bounds=(np.min(self.ypoints), np.min(self.xpoints), np.max(self.ypoints), np.max(self.xpoints))
+            self._bounds=(np.min(self._ypoints), np.min(self._xpoints), np.max(self._ypoints), np.max(self._xpoints))
         return self._bounds
     
     @property
     def center(self) -> Tuple[int, int]:
         if self._center is None:
             # (cx,cy)
-            self._center=(np.mean(self.xpoints),np.mean(self.ypoints))
+            self._center=(np.mean(self._xpoints),np.mean(self._ypoints))
         return self._center
 
     
     @property
     def feret_values(self):
         if not hasattr(self, '_feret_values') or self._feret_values is None:
-            self._feret_values = get_values(self.xpoints, self.ypoints)
+            self._feret_values = get_values(self._xpoints, self._ypoints)
         return self._feret_values
 
     @feret_values.setter

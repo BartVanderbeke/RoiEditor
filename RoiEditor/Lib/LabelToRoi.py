@@ -18,9 +18,9 @@ from TinyRoiManager import TinyRoiManager
 from TinyLog import log
 
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
-        1: (Roi.ROI_STATE_DELETED, set(["edge.image"])),
-        2: (Roi.ROI_STATE_DELETED,set(["small"])),
-        3: (Roi.ROI_STATE_DELETED, set(["edge.image"]))
+        1: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"])),
+        2: (Roi.ROI_STATE_DELETED,set(["DELETED.small"])),
+        3: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"]))
 }
 
 def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:

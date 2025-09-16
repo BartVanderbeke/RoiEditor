@@ -16,11 +16,11 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, QTimer
 
-from RoiEditor.Lib.FileChoosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
-from RoiEditor.Lib.TinyLog import log
-from RoiEditor.Lib.LogWindow import StdoutRedirector, LogWindow
-from RoiEditor.Lib.Stylesheet import overall
-from RoiEditor.Lib.RoiEditorControlPanel import RoiEditorControlPanel
+from FileChoosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
+from TinyLog import log
+from LogWindow import StdoutRedirector, LogWindow
+from Stylesheet import overall
+from RoiEditorControlPanel import RoiEditorControlPanel
 """ the class hierarchy of RoiEditor is explained in RoiEditorControlPanel """
 """ RoiEditorControlPanel is the top level (window/widget) class"""
 
@@ -68,7 +68,8 @@ def launch():
     def show():
         window.show()
         log_window.show()
-
+        log(f"Good day, esteemed user.", type="happy", log_level=0)
+        log(f"How may I be of service to you today?", type="happy", log_level=0)
 
     def move_in_view():
         screen = QApplication.primaryScreen().availableGeometry()

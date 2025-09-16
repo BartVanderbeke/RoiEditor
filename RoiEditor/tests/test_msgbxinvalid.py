@@ -4,8 +4,8 @@ from PyQt6.QtWidgets import QApplication,QWidget
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from RoiEditor.Lib.MessageBoxInvalidValues import MessageBoxInvalidValues
-from RoiEditor.Lib.Stylesheet import overall
+from MessageBoxInvalidValues import MessageBoxInvalidValues
+from Stylesheet import overall
 
 def test_msgbxinvalid():
 

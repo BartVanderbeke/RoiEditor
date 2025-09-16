@@ -8,15 +8,17 @@ from PyQt6.QtGui import QImage
 from PyQt6.QtWidgets import QApplication, QWidget
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.Context import gvars
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
-from RoiEditor.Lib.StopWatch import StopWatch
-from RoiEditor.Lib.TinyRoiManager import TinyRoiManager
-from RoiEditor.Lib.RoiMeasurements import RoiMeasurements
-from RoiEditor.Lib.RoiImage import RoiImageWindow
-from RoiEditor.Lib.Stylesheet import overall
-from RoiEditor.Lib.TinyLog import log
+from Context import gvars
+from TinyRoiFile import TinyRoiFile
+from StopWatch import StopWatch
+from TinyRoiManager import TinyRoiManager
+from RoiMeasurements import RoiMeasurements
+from RoiImage import RoiImageWindow
+from Stylesheet import overall
+from TinyLog import log
+from Roi import Roi
 
 def test_roiimage():
     app = QApplication(sys.argv)
@@ -52,11 +54,16 @@ def test_roiimage():
 
     def on_any_change(str):
         log(f"Something changed: {str}")
+    
+    class DummyParent(QWidget):
+        def on_add_nucleus_here(roi: Roi,here):
+            log(f"DummyParent.on_add_nucleus_here: {roi.name}, {here}")
 
-    dummy = QWidget()
+
+    dummy = DummyParent()
     dummy.setStyleSheet(overall)
 
-    win = RoiImageWindow(qimage=background_img,rm=rm,msmts=msmts, on_any_change=on_any_change,parent=dummy)
+    win = RoiImageWindow(qimage=background_img,rm=rm,nd=None,msmts=msmts, on_any_change=on_any_change,parent=dummy)
 
 
     win.draw_image()

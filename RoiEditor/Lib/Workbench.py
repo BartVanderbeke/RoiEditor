@@ -24,12 +24,12 @@ from Exif import retrieve_tiff_image_info
 
 from LabelToRoiDiff import process_label_image as lbl_process_label_image
 from NumpyToRoi import process_label_image as np_process_label_image
-from RoiEditor.Lib.PolygonEditor import PolygonEditor
 from TinyRoiManager import TinyRoiManager
 from TinyRoiFile import TinyRoiFile
 
 from RoiImage import RoiImageWindow
-from Context import gvars
+#from Context import Context.gvars
+import Context
 from Crumbs import normalize_path
 
 from RoyalKeyInterceptor import RoyalKeyInterceptor
@@ -186,14 +186,14 @@ class Workbench(QWidget):
         
        
         image_size_str = f"width x height: {bkg_w} x {bkg_h} pixels"
-        unit_and_scale=gvars["selected_unit_and_scale"]
+        unit_and_scale=Context.gvars["selected_unit_and_scale"]
         if unit_and_scale["source"] == 'no scaler/unit selected':
             image_size_str = f"width x height: {bkg_w} x {bkg_h} {unit_and_scale['length']['unit']}"
         else:
             physical_size_xy = unit_and_scale["length"]["scaler"] # micron/pixel
             bkg_w_mm = float(bkg_w) * physical_size_xy / 1000.0 # mm
             bkg_h_mm = float(bkg_h) * physical_size_xy / 1000.0 # mm
-            image_size_str = f"width x height: {bkg_w_mm:.3f} x {bkg_h_mm:.3f} millimeter, using  xy scaler {unit_and_scale['length']['scaler']} {unit_and_scale['length']['unit']}/pixel, {unit_and_scale['source']}"
+            image_size_str = f"width x height: {bkg_w_mm:.3f} x {bkg_h_mm:.3f} millimeter, using  xy scaler {unit_and_scale['length']['scaler']} {unit_and_scale['length']['unit']}/px, {unit_and_scale['source']}"
         
         _,fn = os.path.split(self.original_file)
         bottom_bar_text_str = f"File: {fn}, {image_size_str}"
@@ -203,15 +203,15 @@ class Workbench(QWidget):
 
         if self.cell_roi_file and not self.cell_roi_file=="<no name>":
             log("Reading ROIs from zip",type="info")
-            cell_roi_array = TinyRoiFile.read_parallel(zip_path=self.cell_roi_file, label_image =self.label_image,num_threads=gvars["read_parallel_num_threads"])
+            cell_roi_array = TinyRoiFile.read_parallel(zip_path=self.cell_roi_file, label_image =self.label_image,num_threads=Context.gvars["read_parallel_num_threads"])
             self.cell_rm.add_from_list_unchecked(cell_roi_array)
         else:
             log("Creating ROIs from label file",type="info")
             StopWatch.start()
             if file_extension == '.npy':
-                np_process_label_image(self.cell_rm, data, remove_edges=True, remove_small=True, size_threshold=gvars["roi_minimum_size"])
+                np_process_label_image(self.cell_rm, data, remove_edges=True, remove_small=True, size_threshold=Context.gvars["roi_minimum_size"])
             else:
-                lbl_process_label_image(self.cell_rm, self.label_image, remove_edges=True, remove_small=True, size_threshold=gvars["roi_minimum_size"])
+                lbl_process_label_image(self.cell_rm, self.label_image, remove_edges=True, remove_small=True, size_threshold=Context.gvars["roi_minimum_size"])
             StopWatch.stop('process label image')
 
         self.nuke_rm = TinyRoiManager(prefix="N", parent=self)
@@ -219,19 +219,26 @@ class Workbench(QWidget):
             nuke_roi_array = cells_to_nuclei(self.background_image_as_rgb, self.label_image, self.cell_rm)
             self.nuke_rm.add_from_list_unchecked(nuke_roi_array)
         else:
-            nuke_roi_array = TinyRoiFile.read_parallel(zip_path=self.nuke_roi_file, label_image =None,num_threads=gvars["read_parallel_num_threads"])
+            nuke_roi_array = TinyRoiFile.read_parallel(zip_path=self.nuke_roi_file, label_image =None,num_threads=Context.gvars["read_parallel_num_threads"])
             self.nuke_rm.add_from_list_unchecked(nuke_roi_array)
             TinyRoiManager.zip(parent_rm=self.cell_rm, child_rm=self.nuke_rm)
 
-
+        if not TinyRoiManager.has_rois(self.nuke_rm):
+            log("No valid Nuke ROIs detected in image or read from file",type="warning")
 
         self.rm_collection.append(self.nuke_rm)
+
+        # if TinyRoiManager.has_rois(self.nuke_rm):
+
+        # else:
+        #     log("No valid Nuke ROIs detected in image or read from file",type="warning")
+        #     self.nuke_rm=None
 
 
 
 
         self.cell_rm.force_feret()
-        self.measurements=RoiMeasurements(rm=self.cell_rm,delayed_compute=True,unit_and_scale=unit_and_scale,parent=self)
+        self.measurements=RoiMeasurements(cell_rm=self.cell_rm,nuke_rm=self.nuke_rm,unit_and_scale=unit_and_scale,parent=self)
 
         self.window = RoiImageWindow(qimage=self.background_image,rm=self.cell_rm ,nd=self.nuke_rm,msmts=self.measurements,on_any_change=self.on_any_change, parent=self)
         
@@ -259,10 +266,12 @@ class Workbench(QWidget):
         #self.window.view.viewport().installEventFilter(self.mouse_listener)
         
         self.backup_timer.timeout.connect(self.make_backup)
-        self.backup_timer.start(gvars["backup_interval_timer"]) # msec
+        self.backup_timer.start(Context.gvars["backup_interval_timer"]) # msec
 
         #from Context import format_qobject_tree
         #print(format_qobject_tree(self.parent))
+
+        log(f"All is in readiness for the commencement of the cleansing ceremony", type="happy")
 
         return self.window
 
@@ -325,10 +334,11 @@ class Workbench(QWidget):
         # I clicked an existing nucleus
         if roi and roi.name[0] =='N':
             if roi.state == Roi.ROI_STATE_DELETED:
-                log("Restoring a deleted nucleus",type="warning")
+                log(f"Restoring a deleted nucleus {roi.name}",type="warning")
             else:
-                log("An existing nucleus was clicked",type="info")
+                log(f"An existing nucleus {roi.name} was clicked",type="info")
             roi.state = Roi.ROI_STATE_ACTIVE
+            roi.tags= {x for x in roi.tags if not x.startswith("DELETED")}
             editor = PolygonEditor(self.background_image,window_width=150, roi=roi)
             roi = editor.run()
             self.on_any_change()
@@ -336,8 +346,8 @@ class Workbench(QWidget):
         assert not roi or roi.name[0] == 'L'
         # I clicked a cell or the background
         # we will create a nucleus here
-        if not TinyRoiManager.is_valid(self.nuke_rm):
-            log("No nucleus ROI manager",type="warning")
+        if self.nuke_rm is None:
+            log("No nucleus ROI manager",type="error")
             return
         new_nucleus_name = self.nuke_rm.first_free_name()
 
@@ -357,6 +367,9 @@ class Workbench(QWidget):
         if roi:
             log(f"Creating new nucleus {new_nucleus_name} as child of {roi.name}",type="info")
             roi.children.append(nuke_roi)
+            if roi.state==Roi.ROI_STATE_DELETED:
+                nuke_roi.state=Roi.ROI_STATE_DELETED
+                nuke_roi.tags.add("DELETED.WITH_PARENT")
         else:
             log(f"Creating new nucleus {new_nucleus_name} on background",type="info")
         self.on_any_change(f"New nucleus {new_nucleus_name} added to parent {roi.name}",rebuild=True)
@@ -365,7 +378,7 @@ class Workbench(QWidget):
         if not self.measurements:
             log("No measurements available", type="warning")
             return
-        if not QHF.is_histogram_populated(self.hist_plot): # not 'hist_plot' in gvars:
+        if not QHF.is_histogram_populated(self.hist_plot): # not 'hist_plot' in Context.gvars:
             log("Histogram/selected measurement not (yet) available", type="warning")
             return
 
@@ -377,7 +390,7 @@ class Workbench(QWidget):
 
     def on_select_outer(self):
         from .RoiSelect import select_outer_rois_vdb5
-        if not TinyRoiManager.is_valid(self.cell_rm) or self.label_image is None:
+        if not TinyRoiManager.has_rois(self.cell_rm) or self.label_image is None:
             log("No ROIs or no label image",type="warning")
         select_outer_rois_vdb5(rm=self.cell_rm, label_image=self.label_image)
         self.on_any_change(f"outer edge selected")
@@ -386,15 +399,17 @@ class Workbench(QWidget):
         if not self.measurements:
             log("No measurements available",type="warning")
             return False
-        full_csv_name = normalize_path(f"{self.working_dir}{self.base_name}_msmts.csv")
-        full_xlsx_name = normalize_path(f"{self.working_dir}{self.base_name}_msmts.xlsx")
+        file_name_csv = f"{self.base_name}_msmts.csv"
+        file_name_xlsx = f"{self.base_name}_msmts.xlsx"
+        full_csv_name = normalize_path(f"{self.working_dir}{file_name_csv}")
+        full_xlsx_name = normalize_path(f"{self.working_dir}{file_name_xlsx}")
         if Workbench.is_writable(full_csv_name) and Workbench.is_writable(full_xlsx_name):
-            log(f"Saving measurements to {full_csv_name}")
+            log(f"Saving measurements to {file_name_csv} in folder {self.working_dir}")
             self.measurements.save_measurements_to_csv(full_name=full_csv_name, subset_name="ALL")
             self.measurements.save_measurements_to_xlsx(full_name=full_xlsx_name, subset_name="ALL")
             return True
 
-        log(f"Cannot save measurements to {full_csv_name} or {full_xlsx_name}",type="error")
+        log(f"Cannot save measurements to {file_name_csv} or {file_name_xlsx} in folder {self.working_dir}",type="error")
         self.on_fail_to_write(f"{full_csv_name},{full_xlsx_name}")
         return False
 
@@ -404,60 +419,63 @@ class Workbench(QWidget):
             log("No measurements available",type="warning")
             return False
         now = get_timestamp_string()
-        full_name = normalize_path(f"{self.msmts_dir}{now}_{self.base_name}_msmts.csv")
+        file_name_csv = f"{now}_{self.base_name}_msmts.csv"
+        full_name = normalize_path(f"{self.msmts_dir}{file_name_csv}")
         if Workbench.is_writable(full_name):
-            log(f"Backing up measurements to {full_name}")
+            log(f"Backing up measurements to to {file_name_csv} in folder {self.msmts_dir}")
             self.measurements.save_measurements_to_csv(full_name=full_name, subset_name="ALL")
             return True
-        log(f"Cannot backup measurements to {full_name}",type="error")            
+        log(f"Cannot backup measurements to {file_name_csv} in folder {self.msmts_dir}",type="error")
         self.on_fail_to_write(full_name)
         return False
 
+    def write_rois(self,cell_roi_file_full_name : str, nuke_roi_file_full_name):
+        nukes_writable = Workbench.is_writable(nuke_roi_file_full_name)
+        nuke_roi_file_path =Path(nuke_roi_file_full_name)
+        if TinyRoiManager.has_rois(self.nuke_rm):
+            nuke_roi_list = [None] + [roi for roi in self.nuke_rm._name_to_roi.values()]
+            if nukes_writable:
+                log(f"Saving Nuke ROIs to {nuke_roi_file_path.name} in folder {nuke_roi_file_path.parent}")
+                TinyRoiFile.write_parallel(zip_path=nuke_roi_file_full_name, roi_list=nuke_roi_list, num_threads=Context.gvars["save_rois_num_threads"])
+        else:
+            log("No Nuke ROIs available to be saved",type="warning")
+
+        cell_roi_file_path =Path(cell_roi_file_full_name)
+        cells_writable = Workbench.is_writable(cell_roi_file_full_name)
+        if cells_writable:
+            log(f"Saving Cell ROIs to {cell_roi_file_path.name} in folder {cell_roi_file_path.parent}")
+            cell_roi_list = [None] + [roi for roi in self.cell_rm._name_to_roi.values()]
+            TinyRoiFile.write_parallel(zip_path=cell_roi_file_full_name, roi_list=cell_roi_list, num_threads=Context.gvars["save_rois_num_threads"])
+
+        ret_value = cells_writable and nukes_writable
+        if not ret_value:
+            log(f"Cannot save ROIs to {cell_roi_file_path.name} or {nuke_roi_file_path.name}",type="error")
+            self.on_fail_to_write(f"{cell_roi_file_path.name} or {nuke_roi_file_path.name}")
+
+        return ret_value
+
     
     def on_backup_rois(self):
-        if not TinyRoiManager.is_valid(self.cell_rm):
-            log("No ROIs available",type="warning")
+        if not TinyRoiManager.has_rois(self.cell_rm):
+            log("No Cell ROIs available",type="warning")
             return False
         now = get_timestamp_string()
-        cell_roi_list = [None] + [roi for roi in self.cell_rm._name_to_roi.values()]
         cell_roi_file_full_name = normalize_path(f"{self.roi_dir}{now}_{self.base_name}_RoiSet.zip")
-
-        nuke_roi_list = [None] + [roi for roi in self.nuke_rm._name_to_roi.values()]
         nuke_roi_file_full_name = normalize_path(f"{self.roi_dir}{now}_{self.base_name}_NukeRoiSet.zip")
 
-
-        if Workbench.is_writable(cell_roi_file_full_name) and Workbench.is_writable(nuke_roi_file_full_name):
-            log(f"Backing up ROIs to {cell_roi_file_full_name}")
-            TinyRoiFile.write_parallel(zip_path=cell_roi_file_full_name, roi_list=cell_roi_list, num_threads=gvars["save_rois_num_threads"])
-            TinyRoiFile.write_parallel(zip_path=nuke_roi_file_full_name, roi_list=nuke_roi_list, num_threads=gvars["save_rois_num_threads"])
-            return True
-
-        log(f"Cannot backup ROIs to {cell_roi_file_full_name} or {nuke_roi_file_full_name}",type="error")
-        self.on_fail_to_write(f"{cell_roi_file_full_name} or {nuke_roi_file_full_name}")
-        return False
+        return self.write_rois(cell_roi_file_full_name, nuke_roi_file_full_name)
 
 
 
     def on_save_rois(self):
-        if not TinyRoiManager.is_valid(self.cell_rm):
-            log("No ROIs available",type="warning")
+        if not TinyRoiManager.has_rois(self.cell_rm):
+            log("No Cell ROIs available",type="warning")
             return False
-
-        cell_roi_list = [None] + [roi for roi in self.cell_rm._name_to_roi.values()]
+        
         cell_roi_file_full_name = normalize_path(f"{self.working_dir}{self.base_name}_RoiSet.zip")
-
-        nuke_roi_list = [None] + [roi for roi in self.nuke_rm._name_to_roi.values()]
         nuke_roi_file_full_name = normalize_path(f"{self.working_dir}{self.base_name}_NukeRoiSet.zip")
 
-        if Workbench.is_writable(cell_roi_file_full_name) and Workbench.is_writable(nuke_roi_file_full_name):
-            log(f"Saving ROIs to {cell_roi_file_full_name} and {nuke_roi_file_full_name}")
-            TinyRoiFile.write_parallel(zip_path=cell_roi_file_full_name, roi_list=cell_roi_list, num_threads=gvars["save_rois_num_threads"])
-            TinyRoiFile.write_parallel(zip_path=nuke_roi_file_full_name, roi_list=nuke_roi_list, num_threads=gvars["save_rois_num_threads"])
-            return True
-        
-        log(f"Cannot save ROIs to {cell_roi_file_full_name} or {nuke_roi_file_full_name}",type="error")
-        self.on_fail_to_write(f"{cell_roi_file_full_name} or {nuke_roi_file_full_name}")
-        return False
+        return self.write_rois(cell_roi_file_full_name, nuke_roi_file_full_name)
 
 
     @staticmethod

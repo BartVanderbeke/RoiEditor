@@ -23,6 +23,7 @@ from PyQt6.QtCore import Qt, QPointF, QTimer,QPoint
 from PyQt6.QtGui import QColor
 
 from typing import Callable
+from functools import partial
 from typing import Dict
 import numpy as np
 
@@ -33,7 +34,7 @@ from TinyLog import log
 from ClickableItems import RoiClickablePolygonItem
 from RoiMeasurements import RoiMeasurements
 from TinyRoiManager import TinyRoiManager
-
+import Context
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
@@ -54,7 +55,8 @@ def array2d_to_qpolygonf(_xdata, _ydata):
     return polyline
 
 
-from Context import gvars
+#from Context import gvars
+
 class RoiImageWindow(QMainWindow):
     """
         converts the xpoints and ypoints of the ROIs into polygons and shows them on the background image
@@ -156,7 +158,7 @@ class RoiImageWindow(QMainWindow):
 
         selected_color = QColor("#00F0FF")
         base_color = QColor("#CFFF04")
-        deleted_color  = QColor("#C88D94")
+        deleted_color  = QColor("#FF0000") #QColor("#C88D94")
 
         self.cell_state_style_map: Dict[int, Dict] = {
             Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,0.75,Qt.PenStyle.SolidLine), "z": 2},
@@ -181,6 +183,50 @@ class RoiImageWindow(QMainWindow):
         self.selected_measurement=None
         self.hover_nuke=None
         self.hover_roi=None
+
+        self.root_item = QGraphicsTextItem("")
+        self.root_item.setVisible(True)
+
+        self.PartialCellItem = partial(RoiClickablePolygonItem,
+                                   rm=self.cell_rm,
+                                   on_any_change=self.on_any_change,
+                                   on_hover=self.on_hover_roi,
+                                   on_alt_ctrl_click=self.parent.on_add_nucleus_here,
+                                   parent=self.root_item)
+        self.PartialNukeItem = partial(RoiClickablePolygonItem,
+                                    rm=self.nuke_rm,
+                                    on_any_change=self.on_any_change,
+                                    on_hover=self.on_hover_nucleus,
+                                    on_alt_ctrl_click=self.parent.on_add_nucleus_here,
+                                    parent= self.root_item)
+        roi_sample = self.cell_rm.get_sample()
+        name=roi_sample.name
+        dummy_text = QGraphicsSimpleTextItem(name)
+        dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
+        bounding = dummy_text.boundingRect()
+        bw2 = bounding.width() / 2
+        bh2= bounding.height() / 2
+        self.text_offset = (bw2,bh2)
+        dummy_text,roi_sample,name,bounding = None,None,None,None
+
+        def get_brush(roi: Roi):
+            subset_name = "ACTIVE"
+            brush_dict =self.msmts.qbrush[subset_name][self.selected_measurement]
+            return brush_dict.get(roi,self.transparent)
+
+        self.dict_brush_overlay = {
+            # self.msmts.qbrush contains the coloring based on the 'distance' to the median
+            True: {self.cell_rm: lambda roi: get_brush(roi),
+                   self.nuke_rm: lambda roi: self.transparent
+                   },
+            False: {
+                self.cell_rm: lambda roi: self.transparent,
+                self.nuke_rm: lambda roi: self.transparent
+            }
+        }
+        self.dict_roi_visibility_fn={True : (lambda roi: True),
+                           False: (lambda roi: roi.state != Roi.ROI_STATE_DELETED)}
+
 
     def show(self):
         super().show()
@@ -226,103 +272,78 @@ class RoiImageWindow(QMainWindow):
         self.hover_roi=roi
         self._update_scene()
 
-    def _build_and_add_items(self):
+    def _build_and_add_items(self,new_items: bool = False):
         #self.scene.clear()
-        if self.root_item:
+        if self.root_item and self.root_item in self.scene.items():
             self.scene.removeItem(self.root_item)
 
-        self._roi_polygon_cache.clear()
-        self._roi_text_cache.clear()
-        self._nukes_polygon_cache.clear()
+        if not new_items:
+            self._roi_polygon_cache.clear()
+            self._roi_text_cache.clear()
+            self._nukes_polygon_cache.clear()
 
-        self.root_item = QGraphicsTextItem("")
-        self.root_item.setVisible(True)
-
-
-        self.dummy_polygon = QGraphicsPolygonItem(QPolygonF(),parent=self.root_item,)
-        dummy_roi = Roi(name="dummy",xpoints=np.empty((0,)).astype(int),ypoints=np.empty((0,)).astype(int))
-        self.dummy_polygon  = RoiClickablePolygonItem(QPolygonF(),roi=dummy_roi,
-                                                      rm=self.cell_rm,
-                                                      on_any_change=self.on_any_change,
-                                                      on_hover=self.on_hover_roi,
-                                                      on_alt_ctrl_click=self.parent.on_add_nucleus_here,
-                                                      parent=self.dummy_polygon)
-
-        # get a dummy to determine the size of the text bounding box
-        roi_sample = self.cell_rm.get_sample()
-        name=roi_sample.name
-        dummy_text = QGraphicsSimpleTextItem(name)
-        dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
-        bounding = dummy_text.boundingRect()
-        bw2 = bounding.width() / 2
-        bh2= bounding.height() / 2
-
-
-        for roi_name,roi in self.cell_rm.iter_all():
-            (cx,cy)=roi.center
-            x,y =cx - bw2, cy - bh2
+        if not self.cell_rm:
+            log("RoiImageWindow: no Cell ROIs to display",type="error")
+        else:
             z = self.z_on_top-1
-            qpoly=array2d_to_qpolygonf(roi.xpoints, roi.ypoints)
-            item  = RoiClickablePolygonItem(qpoly,roi=roi,rm=self.cell_rm,
-                                            on_any_change=self.on_any_change,
-                                            on_hover=self.on_hover_roi,
-                                            on_alt_ctrl_click=self.parent.on_add_nucleus_here,
-                                            parent=self.root_item)
-            self._roi_polygon_cache[roi] = item
+            bw2,bh2 = self.text_offset
+            text_pen=QPen(Qt.PenStyle.NoPen)
+            text_color=QColor("white")
+            for roi_name,roi in self.cell_rm.iter_all():
+                if roi in self._roi_polygon_cache:
+                    continue
+                (cx,cy)=roi.center
+
+                x,y =cx - bw2, cy - bh2
+
+                qpoly=array2d_to_qpolygonf(roi._xpoints, roi._ypoints)
+                item  = self.PartialCellItem(qpoly,roi=roi)
+                self._roi_polygon_cache[roi] = item
 
 
-            text = QGraphicsSimpleTextItem(roi_name)
-            text.setBrush(QColor("white"))   
-            text.setPen(QPen(QColor("white"))) # QPen(Qt.PenStyle.NoPen)
-            text.setZValue(z)
-            text.setPos(x, y)
-            text.setParentItem(item)
-            self._roi_text_cache[roi]=text
+                text = QGraphicsSimpleTextItem(roi_name)
+                text.setBrush(text_color) # filling the core of the character
+                text.setPen(text_pen) # no border
+                text.setZValue(z)
+                text.setPos(x, y)
+                text.setParentItem(item)
+                self._roi_text_cache[roi]=text
 
 
+        if not self.nuke_rm:
+            log("RoiImageWindow: no Nuke ROIs to display",type="info", log_level=1000)
+        else:
+            for nuke_name,nk in self.nuke_rm.iter_all():
+                if nk in self._nukes_polygon_cache:
+                    continue
 
-        for nuke_name,nk in self.nuke_rm.iter_all():
-
-            (cx,cy)=nk.center
-            qpoly =RoiImageWindow.__x_polygon_at(cx,cy)
-            # parent (item) must be root (item) otherwise the nuclei (items) inside cells cannot be selected 
-            item  = RoiClickablePolygonItem(qpoly,roi=nk,rm=self.nuke_rm,
-                                            on_any_change=self.on_any_change,
-                                            on_hover=self.on_hover_nucleus,
-                                            on_alt_ctrl_click=self.parent.on_add_nucleus_here,
-                                            parent= self.root_item)
-            item.setZValue(self.z_on_top)
-            self._nukes_polygon_cache[nk] = item
-
+                (cx,cy)=nk.center
+                qpoly =RoiImageWindow.__x_polygon_at(cx,cy)
+                # parent (item) must be root (item) otherwise the nuclei (items) inside cells cannot be selected 
+                item  = self.PartialNukeItem(qpoly,roi=nk)
+                item.setZValue(self.z_on_top)
+                self._nukes_polygon_cache[nk] = item
 
         self.scene.addItem(self.root_item)
 
 
+
+
     def _update_scene(self):
-        dict_brush_overlay = {
-            # self.msmts.qbrush contains the coloring based on the 'distance' to the median
-            True: {self.cell_rm: lambda roi: self.msmts.qbrush["ALL"][self.selected_measurement][self.msmts.idx["ALL"][roi]],
-                   self.nuke_rm: lambda roi: self.transparent
-                   },
-            False: {
-                self.cell_rm: lambda roi: self.transparent,
-                self.nuke_rm: lambda roi: self.transparent
-            }
-        }
-        dict_roi_visibility_fn={True : (lambda roi: True),
-                           False: (lambda roi: roi.state != Roi.ROI_STATE_DELETED)}
-        deleted_visible = gvars.get("show_deleted", True)
-        roi_visibility_fn=dict_roi_visibility_fn[deleted_visible]
-        text_visible = gvars.get("show_names", True)
-        show_overlay = gvars.get("show_overlay", True)
+
+        deleted_visible = Context.gvars.get("show_deleted", True)
+        roi_visibility_fn=self.dict_roi_visibility_fn[deleted_visible]
+        text_visible = Context.gvars.get("show_names", True)
+        show_overlay = Context.gvars.get("show_overlay", True)
         show_overlay &= self.selected_measurement is not None
+
 
         for roi, text in self._roi_text_cache.items():
              text.setVisible(text_visible and roi_visibility_fn(roi))
 
         for rm, item_cache, hovered_obj in [(self.cell_rm,self._roi_polygon_cache,self.hover_roi),
                                             (self.nuke_rm,self._nukes_polygon_cache,self.hover_nuke)]:
-            dict_brush = dict_brush_overlay[show_overlay]
+            dict_brush = self.dict_brush_overlay[show_overlay]
             for roi, item  in item_cache.items():
                 style = self.cell_state_style_map[roi.state]
                 item.setPen(style["pen"])
@@ -331,24 +352,24 @@ class RoiImageWindow(QMainWindow):
                 item.setBrush(brush)
             if hovered_obj:
                 hover_item = item_cache.get(hovered_obj,None)
-                if hover_item: 
+                if hover_item:  
                     style = self.roi_hover_state_style_map[hovered_obj.state]
                     hover_item.setPen(style["pen"])
 
-
+   
 
     def draw_image(self,rebuild: bool = False):
         if rebuild or (not self._roi_polygon_cache and self.cell_rm):
-            self._build_and_add_items()
+            self._build_and_add_items(new_items=rebuild)
 
         self._update_scene()
 
         from PyQt6.QtCore import QTimer
         if not self.initialized:
-            QTimer.singleShot(0, lambda: self.wrap_up())
+            QTimer.singleShot(0, lambda: self.wrap_up_draw())
 
 
-    def wrap_up(self):
+    def wrap_up_draw(self):
         self.setCentralWidget(self.view)
         QTimer.singleShot(100, lambda: self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio))
         QTimer.singleShot(200, lambda: self.set_initial_pos_and_size())

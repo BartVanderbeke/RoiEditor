@@ -1,3 +1,4 @@
+from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.io import imread
@@ -6,9 +7,12 @@ import cv2
 from skimage.morphology import opening, disk
 
 import logging
+
+
 logging.getLogger("tifffile").setLevel(logging.ERROR)
-from RoiEditor.Lib.Roi import Roi
+from Roi import Roi
 from TinyRoiManager import TinyRoiManager
+from TinyLog import log
 
 
 def __open_between_labels(label_img):
@@ -34,7 +38,7 @@ def __open_between_labels(label_img):
     return img
 
 
-def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm: TinyRoiManager) -> np.ndarray:
+def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm: TinyRoiManager) -> List[Roi]:
     """
     Convert cell labels to nuclei information.
 
@@ -58,12 +62,13 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
 
     img_rgb = bkg_image.copy().astype(np.float32) / 255.0
     img_hsv = rgb2hsv(img_rgb)
-    HH, SS = img_hsv[...,0], img_hsv[...,1]
+    HH, SS, VV = img_hsv[...,0], img_hsv[...,1], img_hsv[...,2]
 
     # step 1: create mask for nuclei in fibers filtering on color
     # HSV are converted from the paint.net values to skimage values
+
     mask_nuclei_in_fiber = (
-        (HH <= 300.0/360.0) & (HH > 200.0/360.0) &
+        (HH > 200.0/360.0) & (HH <= 300.0/360.0) &
         (SS >= 20.0/100.0)
     )
 
@@ -81,7 +86,13 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
 
     # step 2: image with labels
     binary = (mask_nuclei_in_fiber.astype(np.uint8))  # 0/1 mask
+
     num_labels, nucleus_label_img, stats, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
+    unique_labels = np.unique(nucleus_label_img)
+    unique_labels = unique_labels[unique_labels != 0]
+    if not np.all(unique_labels > 0):
+        log("No nuclei found in cell image", type="warning")
+        return []
     # remove nuclei outside of cells
     nucleus_label_img = nucleus_label_img * mask_closed_cell_lbl
 
@@ -89,11 +100,12 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
     min_area = 10
     #nuke_dict = {}
     max_digits: int = len(str(num_labels))
-    roi_array = np.full(num_labels+1,None,dtype=Roi)
-
+    roi_list: List[Roi] = []
+    skipped_nuclei = 0
     for i in range(1, num_labels):  # skip label 0 (background)
         area = stats[i, cv2.CC_STAT_AREA]
         if area < min_area:
+            skipped_nuclei += 1
             continue
         
         cx, cy = centroids[i]  # (x,y) in float
@@ -114,6 +126,7 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
         contours, _ = cv2.findContours(nucleus_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         if not contours:
+            skipped_nuclei += 1
             continue
             
         # Get the largest contour (should be the nucleus)
@@ -126,6 +139,10 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
         polygon_points = translated_contour.reshape(-1, 2)
         xpoints = polygon_points[:, 0].astype(float)
         ypoints = polygon_points[:, 1].astype(float)
+        if len(xpoints) < 3 or len(ypoints) < 3:
+            skipped_nuclei += 1
+            continue
+        assert len(xpoints) == len(ypoints), "xpoints and ypoints must have the same length"
         
         # Calculate accurate bounds from polygon
         min_x, max_x = int(np.min(xpoints)), int(np.max(xpoints))
@@ -144,7 +161,7 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
             state=Roi.ROI_STATE_ACTIVE
             )
         parent_cell_idx = cell_lbl_image[y, x]
-        if  parent_cell_idx > 0:
+        if  parent_cell_idx > 0 and parent_rm is not None:
             parent_cell_name = parent_rm.idx_to_name(parent_cell_idx)
             parent_cell_roi = parent_rm.get_roi(parent_cell_name)
             if parent_cell_roi:
@@ -157,7 +174,7 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
                     nuke_roi.state = Roi.ROI_STATE_DELETED
 
             
-        roi_array[nucleus_idx] = nuke_roi
+        roi_list.append(nuke_roi)
 
 
 
@@ -169,8 +186,14 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
             nuke_roi.state = Roi.ROI_STATE_DELETED
             nuke_roi.tags.add("DELETED.CLOSE_TO_CELL_BORDER")
 
+    if skipped_nuclei > 0:
+        if skipped_nuclei == 1:
+            log(f"Skipped 1 malformed or too small nucleus", type="warning")
+        else:
+            log(f"Skipped {skipped_nuclei} malformed or too small nuclei", type="warning")
 
-    return roi_array
+
+    return roi_list
 
 if __name__ == "__main__":
     # Input file
@@ -180,16 +203,18 @@ if __name__ == "__main__":
     bkg_image = imread(filename)
     cell_lbl_image = imread(label_filename)
 
-    nuke_dict = cells_to_nuclei(bkg_image, cell_lbl_image)
+    roi_array = cells_to_nuclei(bkg_image, cell_lbl_image, parent_rm=None)
 
     fig, axes = plt.subplots(1, 1, figsize=(10, 5))
     axes.imshow(bkg_image)
     axes.axis("off")
 
+    for nuke in roi_array[1:]:  # skip background
+        if nuke is None:
+            continue
+        x,y = nuke.center
+        axes.plot(x, y, marker="X", color= "cyan")
 
-    for nuke in nuke_dict.values():
-        x,y = nuke["center"]
-        axes.plot(x, y, marker=".", color= "cyan")
 
     plt.tight_layout()
     plt.show()

@@ -40,8 +40,12 @@ class TinyRoiFile:
         def encode_roi(roi: Roi) -> tuple[str, bytes]:
             top, left, bottom, right = roi.bounds
 
-            x = (np.asarray(roi.xpoints, dtype=np.int16) - left).astype('>i2')  # big-endian int16
-            y = (np.asarray(roi.ypoints, dtype=np.int16) - top ).astype('>i2')
+            x = (np.asarray(roi._xpoints, dtype=np.int16) - left).astype('>i2')  # big-endian int16
+            y = (np.asarray(roi._ypoints, dtype=np.int16) - top ).astype('>i2')
+            lx = len(x)
+            ly = len(y)
+            if lx * ly == 0 or lx != ly:
+                log(f"Invalid ROI {roi.name} encountered while writing, length x = {lx}, length y = {ly}", type="error")
 
             header = bytearray(TinyRoiFile.HEADER_SIZE)
             header[0:4] = b'Iout'
@@ -50,10 +54,12 @@ class TinyRoiFile:
             header[10:12] = int(left).to_bytes(2, byteorder='big', signed=True)
             header[12:14] = int(bottom).to_bytes(2, byteorder='big', signed=True)
             header[14:16] = int(right).to_bytes(2, byteorder='big', signed=True)
-            header[16:18] = int(roi.n).to_bytes(2, byteorder='big', signed=True)
+
+            header[16:18] = int(lx).to_bytes(2, byteorder='big', signed=True)
 
             x_bytes = x.tobytes()
             y_bytes = y.tobytes()
+            assert len(x_bytes) > 0 and len(y_bytes) > 0, "empty ROI"
 
             return roi.name + ".roi", header + x_bytes + y_bytes
 
@@ -67,13 +73,13 @@ class TinyRoiFile:
         def worker(chunk):
             return [encode_roi(roi) for roi in chunk]
 
-        # with ThreadPoolExecutor(max_workers=num_threads) as executor:
-        #     for chunk_result in executor.map(worker, chunks):
-        #         results.extend(chunk_result)
+        with ThreadPoolExecutor(max_workers=num_threads) as executor:
+             for chunk_result in executor.map(worker, chunks):
+                 results.extend(chunk_result)
 
-        for chunk in chunks:
-            res = [encode_roi(roi) for roi in chunk]
-            results.extend(res)
+        # for chunk in chunks:
+        #     res = [encode_roi(roi) for roi in chunk]
+        #     results.extend(res)
 
 
         # Step 1: construct zip in memory
@@ -94,8 +100,6 @@ class TinyRoiFile:
             zipf.writestr("tags.json", json_data.encode("utf-8"))
 
         #Step 2: flush it in 1 move
-        # with open(zip_path, 'wb') as f:
-            # f.write(mem_zip.getvalue())
 
         def save_zip(path, data):
             with open(path, 'wb') as f:
@@ -103,9 +107,9 @@ class TinyRoiFile:
 
         # Fire & Forget: no need to wait for data to be saved
         # daemon=False --> makes sure that the thread is not stopped when the program is stopped
-        #import threading
-        #threading.Thread(target=save_zip, args=(zip_path, mem_zip.getvalue()), daemon=False).start()
-        save_zip(zip_path, mem_zip.getvalue())
+        import threading
+        threading.Thread(target=save_zip, args=(zip_path, mem_zip.getvalue()), daemon=False).start()
+
 
     @staticmethod
     def _is_valid_roi_name(name: str):
@@ -135,7 +139,7 @@ class TinyRoiFile:
             has_json = "tags.json" in name_list
             if has_json:
                 json_tags_data=zipf.read("tags.json")
-                log("json detected")
+                log("json detected",type="info",log_level=1000)
                 import json
                 tag_json = json.loads(json_tags_data.decode("utf-8"))
 
@@ -144,15 +148,12 @@ class TinyRoiFile:
         all_l_or_n =TinyRoiFile._all_L_or_N_names(names)
 
         if all_l_or_n:
-            prefix = names[1][0]  # 'L' or 'N'
+            #prefix = names[1][0]  # 'L' or 'N'
             roi_indices = [int(n[1:]) for n in names]
             max_index = np.max(roi_indices)
             l = len(names)
             if l != max_index:
-                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="warning")
-                full = set(range(min(roi_indices), max(roi_indices) + 1))
-                #missing = sorted(full - set(roi_indices))
-                #log(f"Missing labels: {missing} ",type="error")
+                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="info",log_level=1000)
             num_to_use = max(max_index,l)+1
             roi_array=np.array([None] * (num_to_use),dtype=object) #List[Optional[Roi]] = [None] * (num_to_use)
 
@@ -204,10 +205,7 @@ class TinyRoiFile:
                 roi_array[idx]=roi
                 roi.name=labels[idx]
             if l != max_index:
-                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="error")
-                full = set(range(min(kys), max_index + 1))
-                missing = sorted(full - set(kys))
-                log(f"Missing labels: {missing} ",type="error")
+                log(f"Mismatch between #ROI-files and indices: #ROI-files: {l} <> max. index: {max_index} ",type="info",log_level=1000)
         return roi_array
     
     @staticmethod
@@ -228,8 +226,16 @@ class TinyRoiFile:
         x = np.frombuffer(data[HEADER_SIZE : HEADER_SIZE + 2 * n], dtype='>i2').astype(np.int32)
         y = np.frombuffer(data[HEADER_SIZE + 2 * n : HEADER_SIZE + 4 * n], dtype='>i2').astype(np.int32)
 
+        if x is None or y is None or len(x) == 0 or len(y) == 0:
+            log(f"File {name} contains an empty ROI", type="error")
+            x=np.array([0])
+            y=np.array([0])
+            n=1
+
         xpoints = x + left
         ypoints = y + top
+
+
 
         center=(np.mean(xpoints),np.mean(ypoints))
 

@@ -5,10 +5,11 @@ import cv2
 
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from RoiEditor.Lib.TinyRoiFile import TinyRoiFile
-from RoiEditor.Lib.StopWatch  import StopWatch
-from RoiEditor.Lib.Roi  import Roi
+from TinyRoiFile import TinyRoiFile
+from StopWatch  import StopWatch
+from Roi  import Roi
 
 def  test_tinyroifile():
 
@@ -23,6 +24,7 @@ def  test_tinyroifile():
         zip_path = test_path+base_name+"_rois.zip"
         label_file = test_path+base_name+"_cp_masks.png"
         label_image: np.ndarray= cv2.imread(label_file, cv2.IMREAD_UNCHANGED)
+        print(np.unique(label_image))
         StopWatch.start("reading original")
         rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
         StopWatch.stop(f"num of rois read {len(rois)}")
@@ -42,8 +44,8 @@ def  test_tinyroifile():
     StopWatch.stop("dummy")
 
 
-    base_name = "A_Stitch"
-    loop(base_name)
+    # base_name = "A_Stitch"
+    # loop(base_name)
     base_name = "B_Stitch"
     loop(base_name)
     base_name = "C_stitch"
