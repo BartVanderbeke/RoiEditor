@@ -1,9 +1,10 @@
-# ROI Editor
+# ROI Editor 3.0
 
 **ROI Editor** is an interactive Python application for managing, editing, and analyzing Regions of Interest (ROIs) in image data.
 The goal of RoiEditor is to remove “bad ROIs” from microscope images and to generate the data to perform statistics on the basic ROI properties: area and the Feret-parameters.
 RoiEditor 2.0 has extended editing capabilities, but lacks the erosion and multiple slice functionality of the Fiji plugin [LabelsToRois](https://labelstorois.github.io/). RoiEditor 2.0 is a standalone implementation of RoiEditor using regular Python aka CPython.
-RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.org/) is used for that purpose.
+RoiEditor cannot cells/fibers ROIs in photographs. [cellpose](https://www.cellpose.org/) is used for that purpose.
+**RoiEditor 3.0** now has a naive nucleus detector. Nuclei are managed in the same way as the fibers/cells.Additionally the user can manually add nucclei and edit their perimeter polygons.
 
 
 ## ✨ Features
@@ -15,6 +16,8 @@ RoiEditor cannot segment ROIs in photographs. [cellpose](https://www.cellpose.or
 - The state data and other metadata is stored in a json file in the ROI zip file.
 - The scaling of the image (μm/pixel) can be read from the original tif(f) file or set manually.
 - Area & Feret measurements are computed for all ROIs.
+- Nuclei can be detected using a naive algorithm based on a HSV color range
+- Nuclei can be added manually and their perimeter can be edited.
 - The stats for each measurement are shown in a histogram window.
 - The user can select the edge of the ROI-cloud or the outliers for each measurement for deletion.
 - An outlier for a measurement is a value outside of [q1 - 1.5 * IQR,q3 + 1.5 * IQR].
@@ -36,3 +39,4 @@ RoiEditor allows labeling the deleted ROIs with the reason of their deletion. Wh
 ## ✨ Workflow
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
 <img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="600"/>
+
