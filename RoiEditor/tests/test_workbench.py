@@ -49,15 +49,20 @@ def test_workbench():
     dummy = QWidget()
     dummy.setStyleSheet(overall)
 
-    bench = Workbench(original_file = original_file,
-                 label_file= label_file,
-                 cell_roi_file= roi_file,
-                 nuke_roi_file = nuke_roi_file,
+    files= {"org" : original_file,
+            "cell_label" : label_file,
+            "cell_zip" : roi_file,
+            "nuke_label" : None,
+            "nuke_zip" : nuke_roi_file
+        }
+
+
+    bench = Workbench(files,
                  key_to_label_map = Context.key_to_label_map,
                  parent = dummy)
 
     window=bench.build()
-    rm = bench.cell_rm
+    rm = bench.rm["cell"]
 
 
     l= [Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED, Roi.ROI_STATE_DELETED,Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_SELECTED,Roi.ROI_STATE_DELETED,Roi.ROI_STATE_ACTIVE]

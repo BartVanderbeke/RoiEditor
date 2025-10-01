@@ -9,8 +9,7 @@ When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
 """
-from PyQt6.QtWidgets import QFileDialog, QApplication,QWidget
-from PyQt6.QtWidgets import QTreeView
+from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtCore import QSettings, QStandardPaths
 from PyQt6.QtCore import QTimer, QPoint
 
@@ -36,9 +35,8 @@ class FileDialog(QFileDialog):
         self.show()
         self.repaint()
 
-        self.settings = QSettings("EditRois")
+        self.settings = QSettings("RoiEditor", "RoiEditor")
 
-        #self.fileSelected.connect(self._highlight_filename)
 
     def setParent(self,parent):
         super().setParent(parent)

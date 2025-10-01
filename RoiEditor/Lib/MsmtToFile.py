@@ -26,24 +26,35 @@ def attach_extension_methods(self):
 
 # writing the measurements to a csv
 # 1. prepare the data in memory
+@staticmethod
+def format_value(val):
+    
+    if isinstance(val, (list, tuple, np.ndarray)):
+        return "[" + ";".join(f"{v:.3f}".replace('.', ',') for v in val) + "]"
+    else:
+        return f"{val:.3f}".replace('.', ',')
+    
 def _build_measurement_csv(data, measurement_names, subset_name="ALL"):
-
+    _measurement_names = measurement_names.copy()
+    _measurement_names.remove("Color") if "Color" in _measurement_names else None
     measurements = data[subset_name]
-    just_a_measurement = measurements[measurement_names[0]]
+    just_a_measurement = measurements[_measurement_names[0]]
     num_of_values = len(just_a_measurement)
 
     buffer = StringIO()
-    header = ['name'] + measurement_names + ["STATE"] + ["TAGS"]
+    header = ['name'] + _measurement_names + ["STATE"] + ["TAGS"]
     buffer.write(';'.join(header) + '\n')
 
     for row_idx in range(num_of_values):
         roi = measurements["Roi"][row_idx]
         roi_state_str = Roi.state_to_str(roi.state)
         roi_tag_str = ', '.join(roi.tags)
+
         row = [roi.name] + [
-            f"{measurements[msmt_name][row_idx]:.3f}".replace('.', ',')
-            for msmt_name in measurement_names
+            format_value(measurements[msmt_name][row_idx])
+            for msmt_name in _measurement_names
         ] + [roi_state_str, roi_tag_str]
+
         buffer.write(';'.join(row) + '\n')
 
     return buffer.getvalue()
@@ -65,15 +76,16 @@ def _build_measurement_xlsx_table_data(msmts, subset_name="ALL"):
     import numpy as np
 
     data: dict[str, np.ndarray] = msmts.orig
-    measurement_names = msmts.measurement_names
+    _measurement_names = msmts.measurement_names.copy()
+    _measurement_names.remove("Color") if "Color" in _measurement_names else None
     measurements = data[subset_name]
-    just_a_measurement = measurements[measurement_names[0]]
+    just_a_measurement = measurements[_measurement_names[0]]
     num_of_values = len(just_a_measurement)
 
-    header_pixels_all = ['name'] + measurement_names + ['STATE', 'TAGS']
+    header_pixels_all = ['name'] + _measurement_names + ['STATE', 'TAGS']
     rows_pixels_all = []
 
-    header_pixels_act = ['name'] + measurement_names
+    header_pixels_act = ['name'] + _measurement_names
     rows_pixels_act = []
 
     for row_idx in range(num_of_values):
@@ -82,7 +94,7 @@ def _build_measurement_xlsx_table_data(msmts, subset_name="ALL"):
         roi_tag_str = ', '.join(roi.tags)
         row_pxl = [roi.name] + [
             measurements[msmt_name][row_idx]
-            for msmt_name in measurement_names]
+            for msmt_name in _measurement_names]
         if roi.state == Roi.ROI_STATE_ACTIVE:
             rows_pixels_act.append(row_pxl)
         row_pxl = row_pxl + [roi_state_str, roi_tag_str]
@@ -115,10 +127,10 @@ def _build_measurement_xlsx_table_data(msmts, subset_name="ALL"):
     }
 
     scale_sheet = "scalers"
-    scale_header = ["what"] + measurement_names
+    scale_header = ["what"] + _measurement_names
     unit_row = ["unit"]
     scaler_row = ["scaler"]
-    for msmt in measurement_names:
+    for msmt in _measurement_names:
         unit_row.append(msmts.units_and_scalers[msmt]["unit"])
         scaler_row.append(msmts.units_and_scalers[msmt]["scaler"])
     scale_rows = [unit_row, scaler_row]
@@ -159,11 +171,11 @@ def _build_measurement_xlsx_table_data(msmts, subset_name="ALL"):
     }
 
 
-    col_headers_summary = ['stat'] + measurement_names
+    col_headers_summary = ['stat'] + _measurement_names
     row_headers_summary = ["N", "max", "min", "avg", "med", "MAD", "IQR"]
 
     rows_summary = [ [h] for h in row_headers_summary]
-    for col in measurement_names:
+    for col in _measurement_names:
         col_ref = f"tblScaledAct[{col}]"
         formulas  = {"N" :  f"=COUNT({col_ref})",
                     "max": f"=MAX({col_ref})",
@@ -179,7 +191,7 @@ def _build_measurement_xlsx_table_data(msmts, subset_name="ALL"):
 
 
     num_rows_summary = len(row_headers_summary) + 1  # +1 for col header
-    num_cols_summary = len(measurement_names) + 1  # +1 for row header
+    num_cols_summary = len(_measurement_names) + 1  # +1 for row header
 
     wb["summary_ACT"] = {
         "table_type": "regular",
@@ -208,8 +220,10 @@ def _write_xlsx_later(path, wb,order):
 
                 for row_idx, row in enumerate(sheet["rows"], start=1):
                     for col_idx, val in enumerate(row):
-                        if isinstance(val, float):
+                        if isinstance(val, (float, int)):
                             worksheet.write_number(row_idx, col_idx, val)
+                        elif isinstance(val, (list, tuple, np.ndarray)):
+                            worksheet.write(row_idx, col_idx, format_value(val))
                         else:
                             worksheet.write(row_idx, col_idx, val)
 

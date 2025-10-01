@@ -20,8 +20,9 @@ dependencies = [
     "opencv-python",
     "pyqtgraph",
     "PyQt6",
-    "XlsxWriter"
-    "lxml"
+    "XlsxWriter",
+    "lxml",
+    "nptyping"
 ]
 
 [project.scripts]

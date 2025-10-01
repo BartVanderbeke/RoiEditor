@@ -24,10 +24,26 @@ from RoiEditorControlPanel import RoiEditorControlPanel
 """ the class hierarchy of RoiEditor is explained in RoiEditorControlPanel """
 """ RoiEditorControlPanel is the top level (window/widget) class"""
 
+from UserInfo import UserInfoDialog
+from PyQt6.QtCore import QSettings
+
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
 
+# on Windows settings are stored in the registry:
+# HKEY_CURRENT_USER\Software\RoiEditor\RoiEditor
+settings = QSettings("RoiEditor", "RoiEditor")
+first_name = settings.value("UserInfo/first_name", "")
+last_name = settings.value("UserInfo/last_name", "")
+organization = settings.value("UserInfo/organization", "")
+dummy=None
+
 def launch():
+    global settings
+    global first_name
+    global last_name
+    global organization
+    global dummy
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("./Lib/icon.png"))
@@ -39,6 +55,7 @@ def launch():
     """" 90% of the stuff below prevents the windows to first flash a white canvas when they appear """
 
     dummy=QWidget()
+
     dummy.setStyleSheet(overall)
     dummy.hide()
     dummy.move(0,0)
@@ -47,7 +64,7 @@ def launch():
     label_chooser = QLabelFileChooser(parent=dummy)
     roi_chooser = QRoiFileChooser(parent=dummy)
 
-    window = RoiEditorControlPanel()
+    window = RoiEditorControlPanel(parent=dummy)
 
 
     log_window = LogWindow(parent=window)
@@ -62,13 +79,37 @@ def launch():
     sys.stdout = redirector
     sys.stderr = redirector
 
+    
 
+    user_info_ok = (first_name and last_name and organization)
+    if not user_info_ok:
+        log("Requesting user info", type="info", log_level=1000)
+        dlg = UserInfoDialog(parent=dummy)
+        result = dlg.exec()
+        if result:
+            user_info = dlg.get_values()
+            first_name = user_info.get("first_name", "")
+            last_name = user_info.get("last_name", "")
+            organization = user_info.get("organization", "")
+            user_info_ok = (first_name and last_name and organization)
+            if user_info_ok:
+                settings.setValue("UserInfo/first_name", first_name)
+                settings.setValue("UserInfo/last_name", last_name)
+                settings.setValue("UserInfo/organization", organization)
+    if not user_info_ok:
+        log("User info dialog was cancelled or invalid. Proceeding without user info", type="warning")
     QTimer.singleShot(0, lambda: show())
 
+
+
     def show():
+        global first_name
         window.show()
         log_window.show()
-        log(f"Good day, esteemed user.", type="happy", log_level=0)
+        if not first_name:
+            log(f"Good day, esteemed user.", type="happy", log_level=0)
+        else:
+            log(f"Good day, esteemed {first_name}.", type="happy", log_level=0)
         log(f"How may I be of service to you today?", type="happy", log_level=0)
 
     def move_in_view():
@@ -83,7 +124,7 @@ def launch():
 
     QTimer.singleShot(15, lambda: move_in_view())
 
-    QTimer.singleShot(750, lambda: attach_choosers())
+    QTimer.singleShot(20, lambda: attach_choosers())
 
 
     def attach_choosers():

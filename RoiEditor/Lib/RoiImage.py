@@ -11,7 +11,7 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 from PyQt6.QtWidgets import (
     QMainWindow, QSizePolicy,
-    QGraphicsPolygonItem, QGraphicsTextItem, QGraphicsSimpleTextItem
+    QGraphicsPolygonItem, QGraphicsTextItem, QGraphicsSimpleTextItem, QGraphicsScene
 )
 from PyQt6.QtWidgets import QStatusBar, QLabel, QHBoxLayout, QWidget
 from PyQt6.QtGui import (
@@ -22,19 +22,21 @@ from PyQt6.QtCore import QRect
 from PyQt6.QtCore import Qt, QPointF, QTimer,QPoint
 from PyQt6.QtGui import QColor
 
-from typing import Callable
+from typing import Callable, Optional
 from functools import partial
 from typing import Dict
 import numpy as np
 
 from Roi import Roi
-from StopWatch import *
+
 from RectangleSelectorView import RectangleSelectorView
 from TinyLog import log
 from ClickableItems import RoiClickablePolygonItem
 from RoiMeasurements import RoiMeasurements
 from TinyRoiManager import TinyRoiManager
 import Context
+from TinyColor import values_to_qbrush_dict
+
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
@@ -79,8 +81,12 @@ class RoiImageWindow(QMainWindow):
         return QPolygonF(poly)  
 
     @staticmethod
-    def dummy_callback(str):
+    def dummy_on_any_change_callback(str, flag: bool | None = None):
         log(f"RoiImageWindow: No callback connected: {str}")
+
+    @staticmethod
+    def dummy_on_add_nucleus_here_callback(roi: Roi, position: tuple[int,int]):
+        log(f"RoiImageWindow: No on_add_nucleus_here callback connected")
 
     def zoom_to_str(self) -> str:
         return f"{int(self._zoom*100.0)}%"
@@ -89,16 +95,22 @@ class RoiImageWindow(QMainWindow):
                  qimage: QImage,
                  rm: TinyRoiManager,nd: TinyRoiManager,
                  msmts: RoiMeasurements,
-                 on_any_change: Callable[[str], None]=dummy_callback,
+                 on_any_change: Callable[[str, Optional[bool | None]], None]=dummy_on_any_change_callback,
+                 on_add_nucleus_here: Callable[[Roi, tuple[int,int]], None]=dummy_on_add_nucleus_here_callback,
                  parent: QWidget | None = None):
-        self.parent =parent
+        #self.parent =parent
+        super().__init__(parent)
+        self.setWindowFlag(Qt.WindowType.Window)
+        super().move(-5000,-5000)
+
+        self.on_add_nucleus_here = on_add_nucleus_here
+        self.on_any_change=on_any_change
+
         self.nuke_rm = nd
         self.initialized = False
         self.root_item = None
         self.dummy_polygon = None
-        super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Window)
-        super().move(-5000,-5000)
+
 
         self.view=None
 
@@ -117,8 +129,9 @@ class RoiImageWindow(QMainWindow):
         self.pixmap= QPixmap.fromImage(self.qimage)
         self.cell_rm = rm
         self.msmts = msmts
-        self.on_any_change=on_any_change
+
         self.transparent = QBrush(Qt.BrushStyle.NoBrush)
+        self.qbrush: Dict[Roi, QBrush] = {}
 
         # Statusbar and content
         status_bar = QStatusBar()
@@ -148,7 +161,7 @@ class RoiImageWindow(QMainWindow):
 
         self.view = RectangleSelectorView(pixmap=self.pixmap,on_rect_drawn=self._on_rect_drawn,on_change_zoom=self._on_change_zoom,parent=self)
         self.view.setMouseTracking(True)
-        self.scene = self.view.scene
+        self.scene: QGraphicsScene = self.view.scene
         self.view.setFrameStyle(0)
 
         dummy_item = QGraphicsTextItem("Hello")
@@ -157,21 +170,40 @@ class RoiImageWindow(QMainWindow):
         self.font_string = dummy_item.font().toString
 
         selected_color = QColor("#00F0FF")
-        base_color = QColor("#CFFF04")
-        deleted_color  = QColor("#FF0000") #QColor("#C88D94")
+        base_color = QColor("#ccff00")
+        deleted_color  = QColor("#FF1000") #QColor("#C88D94")
 
-        self.cell_state_style_map: Dict[int, Dict] = {
+        self.roi_style: Dict[int, Dict] = {
             Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,0.75,Qt.PenStyle.SolidLine), "z": 2},
             Roi.ROI_STATE_DELETED:  {"pen": QPen(deleted_color,0.5,Qt.PenStyle.SolidLine), "z": 1},
             Roi.ROI_STATE_SELECTED: {"pen": QPen(selected_color,1.5,Qt.PenStyle.SolidLine), "z": 3}
         }
         #self.roi_hover_style = {"pen": QPen(QColor("#FF10F0"),2,Qt.PenStyle.SolidLine), "z": 3}
 
+        self.roi_brush = {
+            # self.msmts.qbrush contains the coloring based on the 'distance' to the median
+            True: {
+                self.cell_rm: lambda roi: self.qbrush.get(roi,self.transparent),
+                self.nuke_rm: lambda roi: self.transparent
+            },
+            False: {
+                self.cell_rm: lambda roi: self.transparent,
+                self.nuke_rm: lambda roi: self.transparent
+            }
+        }
 
-        self.roi_hover_state_style_map: Dict[int, Dict] = {
-            Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,2.0,Qt.PenStyle.SolidLine), "z": 2},
-            Roi.ROI_STATE_DELETED:  {"pen": QPen(deleted_color,1.0,Qt.PenStyle.SolidLine), "z": 1},
-            Roi.ROI_STATE_SELECTED: {"pen": QPen(selected_color,2.0,Qt.PenStyle.SolidLine), "z": 3}
+
+        self.roi_hover_style: Dict[int, Dict] = {
+            Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,2.0,Qt.PenStyle.SolidLine), "brush": self.transparent, "z": 2},
+            Roi.ROI_STATE_DELETED:  {"pen": QPen(deleted_color,1.0,Qt.PenStyle.SolidLine), "brush": self.transparent, "z": 1},
+            Roi.ROI_STATE_SELECTED: {"pen": QPen(selected_color,2.0,Qt.PenStyle.SolidLine), "brush": self.transparent, "z": 3}
+        }
+
+
+
+        self.dict_roi_visibility_fn={
+            True : (lambda roi: True),
+            False: (lambda roi: roi.state != Roi.ROI_STATE_DELETED)
         }
 
 
@@ -180,9 +212,9 @@ class RoiImageWindow(QMainWindow):
         self._roi_polygon_cache: Dict[Roi, RoiClickablePolygonItem] = {}
         self._roi_text_cache: Dict[Roi,QGraphicsSimpleTextItem] = {}
         self._nukes_polygon_cache: Dict[Roi,RoiClickablePolygonItem] = {}
-        self.selected_measurement=None
-        self.hover_nuke=None
-        self.hover_roi=None
+        self.selected_measurement: str | None = None
+        self.hover_nuke: Roi | None = None
+        self.hover_roi: Roi | None = None
 
         self.root_item = QGraphicsTextItem("")
         self.root_item.setVisible(True)
@@ -191,41 +223,25 @@ class RoiImageWindow(QMainWindow):
                                    rm=self.cell_rm,
                                    on_any_change=self.on_any_change,
                                    on_hover=self.on_hover_roi,
-                                   on_alt_ctrl_click=self.parent.on_add_nucleus_here,
+                                   on_alt_ctrl_click=self.on_add_nucleus_here,
                                    parent=self.root_item)
         self.PartialNukeItem = partial(RoiClickablePolygonItem,
                                     rm=self.nuke_rm,
                                     on_any_change=self.on_any_change,
                                     on_hover=self.on_hover_nucleus,
-                                    on_alt_ctrl_click=self.parent.on_add_nucleus_here,
+                                    on_alt_ctrl_click=self.on_add_nucleus_here,
                                     parent= self.root_item)
-        roi_sample = self.cell_rm.get_sample()
-        name=roi_sample.name
-        dummy_text = QGraphicsSimpleTextItem(name)
-        dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
-        bounding = dummy_text.boundingRect()
-        bw2 = bounding.width() / 2
-        bh2= bounding.height() / 2
-        self.text_offset = (bw2,bh2)
-        dummy_text,roi_sample,name,bounding = None,None,None,None
+        # roi_sample: Roi = self.cell_rm.get_sample()
+        # name=roi_sample.name
+        # dummy_text = QGraphicsSimpleTextItem(name)
+        # dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
+        # bounding = dummy_text.boundingRect()
+        # bw2 = bounding.width() / 2
+        # bh2= bounding.height() / 2
+        # self.text_offset = (bw2,bh2)
+        # dummy_text,roi_sample,name,bounding = None,None,None,None
 
-        def get_brush(roi: Roi):
-            subset_name = "ACTIVE"
-            brush_dict =self.msmts.qbrush[subset_name][self.selected_measurement]
-            return brush_dict.get(roi,self.transparent)
 
-        self.dict_brush_overlay = {
-            # self.msmts.qbrush contains the coloring based on the 'distance' to the median
-            True: {self.cell_rm: lambda roi: get_brush(roi),
-                   self.nuke_rm: lambda roi: self.transparent
-                   },
-            False: {
-                self.cell_rm: lambda roi: self.transparent,
-                self.nuke_rm: lambda roi: self.transparent
-            }
-        }
-        self.dict_roi_visibility_fn={True : (lambda roi: True),
-                           False: (lambda roi: roi.state != Roi.ROI_STATE_DELETED)}
 
 
     def show(self):
@@ -256,7 +272,7 @@ class RoiImageWindow(QMainWindow):
     def _on_rect_drawn(self,rect):
         self.cell_rm.select_within(rect, additive=True)
         self.draw_image()
-        self.on_any_change("Rectangle select")
+        self.on_any_change("Rectangle select", None)
 
     def on_select_measurement(self,msmt_name :str):
         if self.selected_measurement != msmt_name:
@@ -264,12 +280,12 @@ class RoiImageWindow(QMainWindow):
             if self.initialized:
                 self.draw_image()
 
-    def on_hover_nucleus(self,nk: Roi):
-        self.hover_nuke=nk
+    def on_hover_nucleus(self, nk: Roi | None):
+        self.hover_nuke = nk
         self._update_scene()
     
-    def on_hover_roi(self,roi : Roi):
-        self.hover_roi=roi
+    def on_hover_roi(self, roi: Roi | None):
+        self.hover_roi = roi
         self._update_scene()
 
     def _build_and_add_items(self,new_items: bool = False):
@@ -282,9 +298,19 @@ class RoiImageWindow(QMainWindow):
             self._roi_text_cache.clear()
             self._nukes_polygon_cache.clear()
 
-        if not self.cell_rm:
+        if not TinyRoiManager.has_rois(self.cell_rm):
             log("RoiImageWindow: no Cell ROIs to display",type="error")
         else:
+            roi_sample: Roi = self.cell_rm.get_sample()
+            name=roi_sample.name
+            dummy_text = QGraphicsSimpleTextItem(name)
+            dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
+            bounding = dummy_text.boundingRect()
+            bw2 = bounding.width() / 2
+            bh2= bounding.height() / 2
+            self.text_offset = (bw2,bh2)
+            dummy_text,roi_sample,name,bounding = None,None,None,None
+
             z = self.z_on_top-1
             bw2,bh2 = self.text_offset
             text_pen=QPen(Qt.PenStyle.NoPen)
@@ -326,9 +352,6 @@ class RoiImageWindow(QMainWindow):
 
         self.scene.addItem(self.root_item)
 
-
-
-
     def _update_scene(self):
 
         deleted_visible = Context.gvars.get("show_deleted", True)
@@ -337,15 +360,23 @@ class RoiImageWindow(QMainWindow):
         show_overlay = Context.gvars.get("show_overlay", True)
         show_overlay &= self.selected_measurement is not None
 
+        subset_name = "ACTIVE" 
+        if subset_name in self.msmts.data and subset_name in self.msmts.normalized_distance:
+            rois = self.msmts.data[subset_name]["Roi"]
+            normalized_dist = self.msmts.normalized_distance[subset_name][self.selected_measurement]
+            self.qbrush = values_to_qbrush_dict(rois=rois, values=normalized_dist, vmin=0.0, vmax=1.0)
+        else:
+            self.qbrush = {}
+            log(f"RoiImageWindow: No measurements (yet) for subset '{subset_name}'",type="info", log_level=1000)
 
         for roi, text in self._roi_text_cache.items():
              text.setVisible(text_visible and roi_visibility_fn(roi))
 
         for rm, item_cache, hovered_obj in [(self.cell_rm,self._roi_polygon_cache,self.hover_roi),
                                             (self.nuke_rm,self._nukes_polygon_cache,self.hover_nuke)]:
-            dict_brush = self.dict_brush_overlay[show_overlay]
+            dict_brush = self.roi_brush[show_overlay]
             for roi, item  in item_cache.items():
-                style = self.cell_state_style_map[roi.state]
+                style = self.roi_style[roi.state]
                 item.setPen(style["pen"])
                 item.setVisible(roi_visibility_fn(roi))
                 brush = dict_brush[rm](roi)
@@ -353,7 +384,8 @@ class RoiImageWindow(QMainWindow):
             if hovered_obj:
                 hover_item = item_cache.get(hovered_obj,None)
                 if hover_item:  
-                    style = self.roi_hover_state_style_map[hovered_obj.state]
+                    style = self.roi_hover_style[hovered_obj.state]
+                    hover_item.setBrush(style["brush"])  # no filling when hovering
                     hover_item.setPen(style["pen"])
 
    
@@ -371,8 +403,8 @@ class RoiImageWindow(QMainWindow):
 
     def wrap_up_draw(self):
         self.setCentralWidget(self.view)
-        QTimer.singleShot(100, lambda: self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio))
-        QTimer.singleShot(200, lambda: self.set_initial_pos_and_size())
+        QTimer.singleShot(10, lambda: self.view.fitInView(self.scene.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio))
+        QTimer.singleShot(20, lambda: self.set_initial_pos_and_size())
         self.initialized = True
 
     def resizeEvent(self, event):
@@ -383,5 +415,5 @@ class RoiImageWindow(QMainWindow):
     def closeEvent(self, event):
         # minimize iso closing
         self.showMinimized()
-        event.accept()
+        event.ignore()
 

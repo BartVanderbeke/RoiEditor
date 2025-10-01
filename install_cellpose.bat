@@ -17,17 +17,17 @@ if not defined PY_PATH (
 echo [OK] Python found: %PY_PATH%
 
 echo.
-echo [2/3] Installing cellpose
+echo [2/3] Installing most recent cellpose 3.x.y
 python -m pip install --upgrade pip >nul 2>&1
-python -m pip install cellpose[gui]
+python -m pip install "cellpose[gui]==3.*"
 if errorlevel 1 (
-    echo [ERROR] Failed to install Cellpose.
+    echo [ERROR] Failed to install Cellpose 3.x.y.
     exit /b 1
 )
-echo [OK] cellpose successfully installed
+echo [OK] cellpose 3.x.y successfully installed.
 
 echo.
-echo [3/3] Creating desktop shortcut for cellpose
+echo [3/3] Creating desktop shortcut for cellpose 3.x.y
 set "ICO=%~dp0assets\cellpose.ico"
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'cellpose.lnk')); " ^
@@ -42,9 +42,9 @@ for /f "delims=" %%D in ('powershell -NoProfile -Command "[Environment]::GetFold
 )
 
 if exist "%REAL_DESKTOP%\cellpose.lnk" (
-    echo [OK] Shortcut found on %REAL_DESKTOP%
+    echo [OK] Shortcut to cellpose found on %REAL_DESKTOP%
 ) else (
-    echo [WARNING] Shortcut not found on desktop.
+    echo [WARNING] Shortcut to cellpose not found on desktop.
 )
 
 echo.

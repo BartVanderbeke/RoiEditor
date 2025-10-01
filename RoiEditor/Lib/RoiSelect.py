@@ -42,7 +42,7 @@ def select_outer_rois_vdb(rm: TinyRoiManager, step: int = 10):
         dx = x - x_avg
         dy = y - y_avg
         r = np.hypot(dx, dy)
-        theta_deg = int(np.degrees(np.atan2(dy, dx))) % 360
+        theta_deg = int(np.degrees(np.arctan2(dy, dx))) % 360
         theta_bin_deg = (theta_deg // step) % num_bins
 
         if r > furthest_in_bin[theta_bin_deg][0]:
@@ -92,7 +92,7 @@ def select_outer_rois_vdb3(rm: TinyRoiManager, step: int = 10):
         dx = x - x_avg
         dy = y - y_avg
         r = np.hypot(dx, dy)
-        theta_deg = int(np.degrees(np.atan2(dy, dx))) % 360
+        theta_deg = int(np.degrees(np.arctan2(dy, dx))) % 360
         theta_bin_deg = (theta_deg // step) % num_bins
 
         if r > furthest_in_bin[theta_bin_deg][0]:
@@ -133,7 +133,7 @@ def select_outer_rois_vdb4(rm: TinyRoiManager, step: int = 10):
         dx = x - x_avg
         dy = y - y_avg
         r = np.hypot(dx, dy)
-        theta_deg = int(np.degrees(np.atan2(dy, dx))) % 360
+        theta_deg = int(np.degrees(np.arctan2(dy, dx))) % 360
         theta_bin_deg = (theta_deg // step) % num_bins
 
         if r > furthest_in_bin[theta_bin_deg][0]:

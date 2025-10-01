@@ -6,6 +6,7 @@ import cv2
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import  QTimer
 import random
+from nptyping import NDArray, Shape, Float64
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
@@ -20,7 +21,10 @@ from HistogramFrame import HistogramFrame
 from RoiMeasurements import RoiMeasurements
 from TinyLog import log
 from MeasurementWorker import compute_and_plot
+import random
 
+
+states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
 
 def test_msmtwrkr():
     base_path = os.path.dirname(__file__)
@@ -37,11 +41,13 @@ def test_msmtwrkr():
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TinyRoiFile.read(zip_path, label_image)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:
             rm.add_unchecked(roi)
+            roi.color: NDArray[Shape["1, 3"], Float64] = np.array([0.0, 0.0, 0.0])
+            roi.state= random.choice(states)
 
     hist_plot= HistogramFrame()
     msmts = RoiMeasurements(rm)
@@ -54,7 +60,7 @@ def test_msmtwrkr():
     def toggle_image():
         log("Triggering update")
         for _,roi in rm:
-            roi.state= random.choice(l)
+            roi.state =  random.choice(states)
         compute_and_plot(rm,hist_plot,msmts)
 
 

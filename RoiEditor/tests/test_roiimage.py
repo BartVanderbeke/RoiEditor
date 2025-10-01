@@ -38,7 +38,7 @@ def test_roiimage():
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TinyRoiFile.read(zip_path, label_image)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:

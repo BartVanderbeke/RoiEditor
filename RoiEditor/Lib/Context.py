@@ -33,7 +33,7 @@ gvars["show_deleted"]=True      # (do not) show the deleted ROIs on the image
 gvars["show_overlay"]=True      # (do not) fill the ROIs with color
 
 gvars["save_rois_num_threads"] = 12
-gvars["read_parallel_num_threads"] = 2
+gvars["read_num_threads"] = 2
 gvars["remove_at_edge"] = True
 gvars["roi_minimum_size"] = 100
 gvars["remove_small"] = True

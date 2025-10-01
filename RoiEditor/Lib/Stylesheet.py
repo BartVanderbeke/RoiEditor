@@ -135,7 +135,12 @@ overall:str="""
                 background-color: #4488ff;   /* Cellpose-blauw */
                 border: 1px solid #4488ff;
             }
-            
+            QToolTip {
+                background-color: #2a2a2a;   /* duidelijke donkere bubbel */
+                color: #ffffff;               /* goed contrast */
+                border: 1px solid #666666;    /* weer een rand zichtbaar */
+                padding: 6px;                 /* ruimte rond de tekst */
+            }            
         """
         
             # QFileDialog {

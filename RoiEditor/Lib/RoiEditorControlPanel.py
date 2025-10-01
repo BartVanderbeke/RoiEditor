@@ -14,7 +14,7 @@ import os
 import re
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox
+    QApplication, QMainWindow, QMessageBox, QLabel
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QButtonGroup
@@ -24,17 +24,20 @@ from pathlib import Path
 
 from FileChoosers import find_related_filenames
 import Context
-#from Context import Context.gvars, Context.key_to_label_map
+from Context import key_to_label_map
 
 from Crumbs import normalize_path
 
-from Workbench import Workbench#
+from Workbench import Workbench
 from TinyLog import log
 from Exif import retrieve_tiff_image_info
 #from InputValidation import attach_extension_methods
 from Stylesheet import *
 from Crumbs import format_float
 from RoyalKeyInterceptor import RoyalKeyInterceptor
+from EventEaterOverlay import EventEaterOverlay
+
+
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
@@ -56,7 +59,7 @@ class RoiEditorControlPanel(QMainWindow):
             RoiImageWindow              : shows the photograph, ROIs and overlays  
                 RectangleSelectorView   : implements rectangle selection on RoiImageWindow
             HistogramFrame              : displays the statistics of RoiMeasurements
-            ROIClickListener            : catches the application specific mouse clicks
+
 
     """
     ID_PIXEL = 1
@@ -66,26 +69,33 @@ class RoiEditorControlPanel(QMainWindow):
         super().__init__(parent)
         super().move(-10000, -10000)
 
-        self.setStyleSheet(overall)
-
         self.setWindowTitle("RoiEditor - Control Panel")
         basepath = os.path.dirname(__file__)
         uifile = os.path.join(basepath, "RoiEditorControlPanel.ui")
 
         uic.loadUi(uifile, self)
-        self.closing=False
-        # combined window has no parents
 
-        self.file= { "org" : { "name" : None, "qlabel" : self.txt_original},
-            "label" : { "name" : None, "qlabel" : self.txt_label},
-            "zip" : { "name" : None, "qlabel" : self.txt_zip},
-            "nukezip" : { "name" : None, "qlabel" : self.txt_zip}
+        self.closing=False
+        
+        self.files= { "org" : { "name" : None, "qlabel" : self.txt_original},
+            "cell_label" : { "name" : None, "qlabel" : self.txt_cell_label},
+            "cell_zip" : { "name" : None, "qlabel" : self.txt_cell_zip},
+            "nuke_label" : { "name" : None, "qlabel" : self.txt_nuke_label},
+            "nuke_zip" : { "name" : None, "qlabel" : self.txt_nuke_zip}
+        }
+        self.candidates: dict[str, str] = {}
+        self.whatfiles: dict[str, str] =  {
+            "org" : "Original",
+            "cell_label" : "Cell Label",
+            "cell_zip" : "Cell Zip",
+            "nuke_label" : "Nuke Label",
+            "nuke_zip" : "Nuke Zip"
         }
 
         self.original_stdout = sys.stdout
         self.original_stderr = sys.stderr
         self.workbench: Workbench = None
-        self.label_hint: str = None
+        self.cell_label_hint: str = None
         self.bg_unit = QButtonGroup(self)
         self.bg_unit.addButton(self.rb_pixel_is_unit, id=self.ID_PIXEL)
         self.bg_unit.addButton(self.rb_unit_from_file, id=self.ID_FROM_FILE)
@@ -101,8 +111,23 @@ class RoiEditorControlPanel(QMainWindow):
                "show_names"  : {"checked": self.cb_show_names.isChecked,   "setting": "show_names",   "action": self.wb_on_toggle_show_names},
         }
 
+        self.set_up_key_interceptor()
+
+        from PyQt6.QtWidgets import QWidget
+        for w in self.findChildren(QWidget):
+            if w.toolTip():
+                    w.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+                    w.setMouseTracking(True)
+                    w.installEventFilter(self.interceptor)
+
+        self.event_eater_overlay = EventEaterOverlay(self, "")
 
         #attach_extension_methods(self)
+
+    def eatAllEvents(self):
+        self.event_eater_overlay.activate("Your patience is a virtue we now rely on.")
+    def allowAllEvents(self):
+        self.event_eater_overlay.deactivate()
                       
 
     def closeEvent(self, event):
@@ -119,6 +144,8 @@ class RoiEditorControlPanel(QMainWindow):
         self.close_windows([])
         super().close()
         self.deleteLater()
+        if event:
+            event.accept()
 
 
     def on_previous(self):
@@ -162,6 +189,9 @@ class RoiEditorControlPanel(QMainWindow):
         self.workbench.setParent(None)
         self.workbench.deleteLater()
         self.workbench=None
+        log("+++++", type="info")
+        log("Cleaning up session", type="info")
+        log("+++++", type="info")
 
 
     def handle_toggle(self,toggle_str:str):
@@ -191,144 +221,157 @@ class RoiEditorControlPanel(QMainWindow):
     def wb_on_toggle_show_names(self):
         self.workbench.on_toggle_show_names()
 
+    def on_click_clear_original(self):
+        log("Clear original filename", type="info",log_level=1000)
+        self.reset_filename(for_which="org")
+
+    def on_click_clear_cell_label(self):
+        log("Clear cell label filename", type="info",log_level=1000)
+        self.reset_filename(for_which="cell_label")
+                            
+    def on_click_clear_cell_zip(self):
+        log("Clear cell zip filename", type="info",log_level=1000)
+        self.reset_filename(for_which="cell_zip")
+
+    def on_click_clear_nuke_label(self):
+        log("Clear nuke label filename", type="info",log_level=1000)
+        self.reset_filename(for_which="nuke_label")
+
+    def on_click_clear_nuke_zip(self):
+        log("Clear nuke zip filename", type="info",log_level=1000)
+        self.reset_filename(for_which="nuke_zip")
+
+    def on_click_browse_cell_label(self):
+        selected_file: str = self.label_chooser.showDialog()
+        self.try_accept_name(for_which="cell_label",value=selected_file,on_fail_reset=False)
+
+    def on_click_browse_cell_zip(self):
+        selected_file: str =self.roi_chooser.showDialog()
+        self.try_accept_name(for_which="cell_zip",value=selected_file,on_fail_reset=False)
+
+    def on_click_browse_nuke_label(self):
+        selected_file: str = self.label_chooser.showDialog()
+        self.try_accept_name(for_which="nuke_label",value=selected_file,on_fail_reset=False)
+
+    def on_click_browse_nuke_zip(self):
+        selected_file: str =self.roi_chooser.showDialog()
+        self.try_accept_name(for_which="nuke_zip",value=selected_file,on_fail_reset=False)
 
     fn_color_dict = {False : "color: white; font-style: normal;",
                      True  : "color: orange; font-style: italic;"}
 
     def accept_name(self, for_which : str, value : str):
-        # "zip" : { "name" : None, "qlabel" : self.txt_zip}
+        # "cell_zip" : { "name" : None, "qlabel" : self.txt_label_zip}
         value = normalize_path(value)
         style= self.fn_color_dict[self.workbench is not None]
         path=Path(value)
-        qlbl =self.file[for_which]["qlabel"]
+        qlbl =self.files[for_which]["qlabel"]
         qlbl.setText(path.stem+path.suffix)
         qlbl.setStyleSheet(style)
-        self.file[for_which]["name"]=value
+        self.files[for_which]["name"]=value
     
+    def try_accept_name(self, for_which : str, value : str, on_fail_reset: bool = False)-> bool:
+        file_exists = value and os.path.isfile(value)
+        if file_exists:
+            self.accept_name(for_which=for_which,value=value)
+            return True
+        if on_fail_reset:
+            self.reset_filename(for_which=for_which)
+        return False
+
     def reset_names(self):
         self.le_scale_from_file.setText('unknown')
-        for v in self.file.values():
+        for v in self.files.values():
             v["name"]="<no name>"
             qlbl=v["qlabel"]
             qlbl.setText("<no name>")
             qlbl.setStyleSheet(self.fn_color_dict[False])
     
     def reset_styles(self):
-        for v in self.file.values():
+        for v in self.files.values():
             v["qlabel"].setStyleSheet(self.fn_color_dict[False])
 
     def reset_filename(self,for_which: str):
-        v=self.file[for_which]
+        v=self.files[for_which]
         v["name"]="<no name>"
         qlbl=v["qlabel"]
         qlbl.setText("<no name>")
         qlbl.setStyleSheet(self.fn_color_dict[False])
 
-    def on_click_clear_original(self):
-        log("Clear original filename", type="info")
-        self.reset_filename(for_which="org")
 
-    def on_click_clear_label(self):
-        log("Clear label filename", type="info")
-        self.reset_filename(for_which="label")
-                            
-    def on_click_clear_zip(self):
-        log("Clear zip filename", type="info")
-        self.reset_filename(for_which="zip")
+    def valid_filename(self,filename: str) -> bool:
+        if not filename or filename=="<no name>":
+            return False
+        path = Path(filename)
+        return path.exists() and path.is_file()
 
     def on_click_browse_original(self):
-        self.label_hint = None
-        selected_file,hint = self.original_chooser.showDialog()
-        if selected_file:
-            label_file, zip_file = find_related_filenames(selected_file)
-            self.accept_name(for_which="org",value=selected_file)
+        selected_org_file,cell_label_hint = self.original_chooser.showDialog()
+        if  selected_org_file:
+            self.candidates = find_related_filenames(selected_org_file)
+            if cell_label_hint:
+                self.candidates["cell_label"]=cell_label_hint
+
+            for for_which,candidate in self.candidates.items():
+                self.try_accept_name(for_which=for_which,value=candidate,on_fail_reset=False)
+
+            selected_org_file=self.files["org"]["name"]
+            if not selected_org_file:
+                self.reset_names()
+                return
 
             txt = 'unknown'
-            if selected_file.endswith(".tiff") or selected_file.endswith(".tif"):
-                tiff_info = retrieve_tiff_image_info(selected_file)
+            if selected_org_file.endswith(".tiff") or selected_org_file.endswith(".tif"):
+                tiff_info = retrieve_tiff_image_info(selected_org_file)
                 physical_size_x= tiff_info.get("PhysicalSizeX",None)
                 if physical_size_x:
                     txt=str(physical_size_x)
+                    self.rb_unit_from_file.setChecked(True)
             self.le_scale_from_file.setText(txt)
 
-            self.label_hint = hint or label_file
-            if self.label_hint:
-                self.accept_name(for_which="label",value=self.label_hint)
-            self.zip_hint = zip_file
-            if self.zip_hint:
-                self.accept_name(for_which="zip",value=self.zip_hint)
-            else:
-                self.reset_filename(for_which="zip")
-            
-
-    def on_click_browse_label(self):
-        selected_file: str = self.label_chooser.showDialog(self.label_hint)
-        if selected_file:
-            self.accept_name(for_which="label",value=selected_file)
-
-    def on_click_browse_zip(self):
-        selected_file: str =self.roi_chooser.showDialog()
-        if selected_file:
-            self.accept_name(for_which="zip",value=selected_file)
-
     def on_click_browse_next(self):
+        should_exit = False
 
-        path_str_org = self.file["org"]["name"]
-        path_str_lbl = self.file["label"]["name"]
-        path_str_cell_zip= self.file["zip"]["name"]
-        
 
-        if not (path_str_org and path_str_lbl) or path_str_org=="<no name>" or path_str_lbl=="<no name>":
-            log("Original or label file not selected",type="warning")
+        # validate filenames of the mandatory files
+        if not self.valid_filename(self.files["org"]["name"]):
+            log("Original file invalid or not selected or not found",type="error")
+            should_exit = True
+
+        if not self.valid_filename(self.files["cell_label"]["name"]):
+            log("Label file invalid or not selected or not found",type="error")
+            should_exit = True
+
+        if should_exit:
             return
-        if not (Path(path_str_org).exists() and Path(path_str_lbl).exists()):
-            log("Original or label file cannot be found",type="warning")
-            return
-        
+
+        # validate filenames of the optional files
+        for k in ["cell_zip","nuke_label","nuke_zip"]:
+            if not self.try_accept_name(for_which=k, value=self.files[k]["name"], on_fail_reset=True):
+                log(f"{self.whatfiles[k]} file invalid or not selected or not found", type="warning")
+
+        # validate numeric entries
         if not self.validate_entries_and_continue(): # ... or not
-            log("Please enter valid numbers",type="warning")
+            log("Please enter valid numbers",type="error")
             return
-
-        if not (path_str_cell_zip and Path(path_str_cell_zip).exists()) or path_str_cell_zip=="<no name>":
-            log("Zip file not specified or not found",type="warning")
-            self.file["zip"]["name"]="<no name>"
-            self.file["zip"]["qlabel"].setText("<no name>")
-
-            self.file["nukezip"]["name"]="<no name>"
-            #self.file["nukezip"]["qlabel"].setText("<no name>")
-            path_str_nuke_zip=None
-            path_str_cell_zip=None
-            path_nuke_zip=Path()
-        else:
-            org_path=Path(path_str_org)
-            path_nuke_zip=org_path.parent / Path(org_path.stem+"_NukeRoiSet.zip")
-            path_str_nuke_zip=str(path_nuke_zip)
-
-        if not (path_str_nuke_zip and path_nuke_zip.exists()) or path_str_nuke_zip=="<no name>":
-            log("Nuke zip file not specified or not found",type="warning")
-            self.file["nukezip"]["name"]="<no name>"
-            #self.file["nukezip"]["qlabel"].setText("<no name>")
-            path_str_nuke_zip="<no name>"
-            path_nuke_zip=Path()
-
-        
-
-        if self.workbench:
-            log("Cleaning up previous session", type="info")
-            self.clean_up()
-
-
 
         self.collect_and_report_settings()
         self.reset_styles()
 
-        self.workbench = Workbench(original_file=path_str_org,
-                                   label_file=path_str_lbl,
-                                   cell_roi_file=path_str_cell_zip,
-                                   nuke_roi_file=path_str_nuke_zip,
+        # clean up previous session
+        if self.workbench:
+            self.clean_up()
+
+
+        # strip of unnecessary dictionary fields
+        self.selected_files: dict[str, str | None] = {key : value["name"] if value["name"] and value["name"] != "<no name>" else None for key,value in self.files.items()}
+
+        self.workbench = Workbench(selected_files=self.selected_files,
                                    on_fail_to_write=self.on_cannot_write_to_file,
                                    on_fail_to_build=self.on_fail_to_build,
-                                   key_to_label_map=Context.key_to_label_map,parent=self)
+                                   event_filter=self.interceptor,
+                                   parent=self)
+
         self.workbench.build()
 
 
@@ -402,19 +445,22 @@ class RoiEditorControlPanel(QMainWindow):
         msg.exec() # modal
 
     def collect_and_report_settings(self):
-        path_org = Path(self.file["org"]["name"])
-        path_lbl = Path(self.file["label"]["name"]) 
-        path_zip = Path(self.file["zip"]["name"])
-        log(f"Original: {path_org.name} in folder {path_org.parent}", type="info")
-        log(f"Label: {path_lbl.name} in folder {path_lbl.parent}", type="info")
-        log(f"Zip: {path_zip.name} in folder {path_zip.parent}", type="info")
+        path_org = Path(self.files["org"]["name"])
+        path_lbl = Path(self.files["cell_label"]["name"]) 
+        path_zip = Path(self.files["cell_zip"]["name"])
+        log(f"Original: {path_org.name}", type="info")
+        log(f"Cell Label: {path_lbl.name}", type="info")
+
+
+        Context.gvars["detect_nuclei"]=self.cbDetectNukes.isChecked()
         Context.gvars["remove_at_edge"]=self.cbEdge.isChecked()
         Context.gvars["remove_small"]=self.cbSmall.isChecked()
-        log("Remove at edge?", Context.gvars["remove_at_edge"], type="info")
-        log("Remove small?", Context.gvars["remove_small"], type="info")
+        log("Detect nuclei? ", "yes" if Context.gvars["detect_nuclei"] else "no", type="info")
+        log("Remove at edge? ", "yes" if Context.gvars["remove_at_edge"] else "no", type="info")
+        log("Remove small? ", "yes" if Context.gvars["remove_small"] else "no", type="info")
         log("Min size in pixels:", Context.gvars["roi_minimum_size"], type="info")
         # {"length": {"scaler": 1.0, "unit": "px"},"area": {"scaler": 1.0*1.0, "unit": "px"}, "source": "no scaler/unit selected"},
-        log(Context.gvars["selected_unit_and_scale"], type="info")
+        # log(Context.gvars["selected_unit_and_scale"], type="info")
 
 
     def connect_all_handlers(self):
@@ -427,10 +473,14 @@ class RoiEditorControlPanel(QMainWindow):
         self.cb_show_overlay.setChecked(Context.gvars["show_overlay"])        
         self.btn_browse_original.clicked.connect(self.on_click_browse_original)
         self.btn_clear_original.clicked.connect(self.on_click_clear_original)
-        self.btn_browse_label.clicked.connect(self.on_click_browse_label)
-        self.btn_clear_label.clicked.connect(self.on_click_clear_label)
-        self.btn_browse_zip.clicked.connect(self.on_click_browse_zip)
-        self.btn_clear_zip.clicked.connect(self.on_click_clear_zip)
+        self.btn_browse_cell_label.clicked.connect(self.on_click_browse_cell_label)
+        self.btn_clear_cell_label.clicked.connect(self.on_click_clear_cell_label)
+        self.btn_browse_cell_zip.clicked.connect(self.on_click_browse_cell_zip)
+        self.btn_clear_cell_zip.clicked.connect(self.on_click_clear_cell_zip)
+        self.btn_browse_nuke_label.clicked.connect(self.on_click_browse_nuke_label)
+        self.btn_clear_nuke_label.clicked.connect(self.on_click_clear_nuke_label)
+        self.btn_browse_nuke_zip.clicked.connect(self.on_click_browse_nuke_zip)
+        self.btn_clear_nuke_zip.clicked.connect(self.on_click_clear_nuke_zip)
 
         self.btn_next.clicked.connect(self.on_click_browse_next)
         self.btn_outer.clicked.connect(self.on_select_outer)

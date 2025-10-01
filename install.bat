@@ -44,7 +44,7 @@ if exist "%REAL_DESKTOP%\cellpose.lnk" (
     echo [3/3] [OK] Shortcut to cellpose already exists
     exit /b 0
 ) else (
-    echo [3/3] [INFO] Shortcut not found on desktop, will attempt to create one
+    echo [3/3] [INFO] Shortcut to cellpose not found on desktop, will attempt to create one
 )
 
 powershell -NoProfile -Command ^

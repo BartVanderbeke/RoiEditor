@@ -66,6 +66,14 @@ class TinyLog:
         "debug": "\033[36m"     # cyan
     }
 
+    TYPE_TO_ICON = {
+        "info": "ℹ️",
+        "warning": "⚠",
+        "error": "❌",
+        "happy": "😊",
+        "debug": "🐞"
+    }
+
     PRINT_ALWAYS={"error","warning"}
 
     _only_print_what_has_lower_level_than: np.uint8=LOG_LVL_NORMAL
@@ -102,6 +110,7 @@ class TinyLog:
         
         COLOR = TinyLog.TYPE_TO_COLOR.get(type, "\033[97m")
         RESET = "\033[0m"
+        ICON = TinyLog.TYPE_TO_ICON.get(type, "")
 
         caller_str =""
         caller_name = inspect.stack()[2].function
@@ -111,8 +120,9 @@ class TinyLog:
             caller_str = f"[{caller_short}]"
 
         message = " ".join(map(str, args))  # geen sep!
+        message = f"{ICON} {message}"
         if message:
-            caller_padded = caller_str.ljust(20)
+            caller_padded = "" #caller_str.ljust(20)
             full_line = f"{COLOR}{caller_padded}{message}{RESET}"
             print(full_line , sep=sep, end=end, file=file, flush=flush)
 

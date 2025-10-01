@@ -1,3 +1,14 @@
+"""RoiEditor
+
+Author: Bart Vanderbeke & Elisa
+Copyright: © 2025
+License: MIT
+
+Parts of the code in this project have been derived from chatGPT suggestions.
+When code has been explicitly derived from someone else's code,
+I left the (GitHub) url of the original code next to the derived code.
+
+"""
 from typing import List
 import numpy as np
 import matplotlib.pyplot as plt
@@ -7,6 +18,7 @@ import cv2
 from skimage.morphology import opening, disk
 
 import logging
+from StopWatch import StopWatch
 
 
 logging.getLogger("tifffile").setLevel(logging.ERROR)
@@ -37,8 +49,9 @@ def __open_between_labels(label_img):
 
     return img
 
+kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (7, 7))
 
-def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm: TinyRoiManager) -> List[Roi]:
+def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm: TinyRoiManager) -> np.ndarray:
     """
     Convert cell labels to nuclei information.
 
@@ -47,158 +60,136 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
         cell_lbl_image: Label image with cell segmentation as numpy array
 
     Returns:
-        tuple containing:
-            - dictionary with nuclei information
-            - numpy array with nucleus labels
+        list of Roi objects (nuclei)
     """
-    # to find labels in between cells we need an opened version of the label image
-    opened_cell_lbl_img = __open_between_labels(cell_lbl_image)
-    # to avoid nuclei in parts where cellpose did not detect cells
-    # we need a closed version of the cell label image
-    # closed_cell_lbl_img = include gaps between cells but do not 
-    # include parts where cellpose did not detect cells
-    closed_cell_lbl_img = opening(cell_lbl_image, disk(3))
-    mask_closed_cell_lbl = closed_cell_lbl_img != 0 
 
-    img_rgb = bkg_image.copy().astype(np.float32) / 255.0
-    img_hsv = rgb2hsv(img_rgb)
+    StopWatch.start()
+
+    img_rgb = bkg_image.copy()
+
+    img_hsv= cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV).astype(np.uint8)
     HH, SS, VV = img_hsv[...,0], img_hsv[...,1], img_hsv[...,2]
 
     # step 1: create mask for nuclei in fibers filtering on color
-    # HSV are converted from the paint.net values to skimage values
+    # HSV are converted from the paint.net values to opencv values
+    mask_nuclei = (
+        (HH > 200//2) & (HH <= 300//2) & # CV2 HSV H 0..180 S 0..255 V 0..255
+        (SS > int(20.0/100.0*255.0)) &
+        (VV < int(235.0/100.0*255.0))
+    ).astype(np.uint8)
 
-    mask_nuclei_in_fiber = (
-        (HH > 200.0/360.0) & (HH <= 300.0/360.0) &
-        (SS >= 20.0/100.0)
-    )
+    opened_cell_lbl_img = __open_between_labels(cell_lbl_image).astype(np.uint8)
+    opened_cell_lbl_img[opened_cell_lbl_img != 0] = 255
 
-
-    mask_opened_cell_lbl = (opened_cell_lbl_img != 0).astype(np.uint8)  # 0/1
-    binary255 = mask_opened_cell_lbl * 255                               # 0/255 (CV_8U)
 
     maskSize = cv2.DIST_MASK_PRECISE
 
-    dist_inside  = cv2.distanceTransform(binary255,        cv2.DIST_L2, maskSize).astype(np.float32)
-    dist_outside = cv2.distanceTransform(255 - binary255,  cv2.DIST_L2, maskSize).astype(np.float32)
-
+    dist_inside  = cv2.distanceTransform(opened_cell_lbl_img,        cv2.DIST_L2, maskSize).astype(np.float32)
+    dist_outside = cv2.distanceTransform(255 - opened_cell_lbl_img,  cv2.DIST_L2, maskSize).astype(np.float32)
 
     distmap = dist_inside - dist_outside
 
-    # step 2: image with labels
-    binary = (mask_nuclei_in_fiber.astype(np.uint8))  # 0/1 mask
+    min_area = 8
+    _, nucleus_label_img, stats, _ = cv2.connectedComponentsWithStats(mask_nuclei, connectivity=8)
+    nucleus_label_img *= np.isin(
+        nucleus_label_img,
+        np.where(stats[:, cv2.CC_STAT_AREA] >= min_area)[0][1:]  # skip achtergrond (0)
+    )
 
-    num_labels, nucleus_label_img, stats, centroids = cv2.connectedComponentsWithStats(binary, connectivity=8)
-    unique_labels = np.unique(nucleus_label_img)
-    unique_labels = unique_labels[unique_labels != 0]
-    if not np.all(unique_labels > 0):
-        log("No nuclei found in cell image", type="warning")
-        return []
-    # remove nuclei outside of cells
-    nucleus_label_img = nucleus_label_img * mask_closed_cell_lbl
+    deleted_nuclei = 0
 
-    # step 3: collect all nuclei
-    min_area = 10
-    #nuke_dict = {}
-    max_digits: int = len(str(num_labels))
-    roi_list: List[Roi] = []
-    skipped_nuclei = 0
-    for i in range(1, num_labels):  # skip label 0 (background)
-        area = stats[i, cv2.CC_STAT_AREA]
-        if area < min_area:
-            skipped_nuclei += 1
+    binary_nucleus_label_img = (nucleus_label_img > 0).astype(np.uint8) * 255
+    _contours, _ = cv2.findContours(binary_nucleus_label_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    contours = [cnt for cnt in _contours if cv2.contourArea(cnt) > 0]
+
+    max = np.unique(nucleus_label_img).max()
+    roi_array = np.full(shape=max+1,fill_value=None,dtype=Roi)
+    max_digits=len(str( len(roi_array) ))
+
+    for contour in contours:
+        coords = np.array(contour.squeeze()).reshape(-1, 2)
+
+        M = cv2.moments(contour)
+        m00 = cv2.contourArea(contour)
+
+        cx, cy = int(M['m10']/m00), int(M['m01']/m00)
+
+
+        label_value = nucleus_label_img[cy,cx]
+        if label_value ==0 or coords.ndim != 2 or len(coords) < 3:
             continue
-        
-        cx, cy = centroids[i]  # (x,y) in float
-        x, y = int(cx), int(cy)
-        nucleus_idx = nucleus_label_img[y, x]
-        
-        # Get bounding box from connectedComponents
-        bbox_x = stats[i, cv2.CC_STAT_LEFT]
-        bbox_y = stats[i, cv2.CC_STAT_TOP]
-        bbox_w = stats[i, cv2.CC_STAT_WIDTH]
-        bbox_h = stats[i, cv2.CC_STAT_HEIGHT]
-        
-        # Extract just this nucleus region
-        nucleus_region = (nucleus_label_img == i)[bbox_y:bbox_y+bbox_h, bbox_x:bbox_x+bbox_w]
-        nucleus_binary = nucleus_region.astype(np.uint8) * 255
-        
-        # Find contours in the small region of the bounding box: should only be one
-        contours, _ = cv2.findContours(nucleus_binary, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        
-        if not contours:
-            skipped_nuclei += 1
-            continue
-            
-        # Get the largest contour (should be the nucleus)
-        largest_contour_at_origin = max(contours, key=cv2.contourArea)
-        
-        # Convert back to full image coordinates
-        translated_contour = largest_contour_at_origin + np.array([bbox_x, bbox_y])
-        
-        # Extract polygon points
-        polygon_points = translated_contour.reshape(-1, 2)
-        xpoints = polygon_points[:, 0].astype(float)
-        ypoints = polygon_points[:, 1].astype(float)
-        if len(xpoints) < 3 or len(ypoints) < 3:
-            skipped_nuclei += 1
-            continue
-        assert len(xpoints) == len(ypoints), "xpoints and ypoints must have the same length"
-        
-        # Calculate accurate bounds from polygon
-        min_x, max_x = int(np.min(xpoints)), int(np.max(xpoints))
-        min_y, max_y = int(np.min(ypoints)), int(np.max(ypoints))
-        
-        nuke_roi_name: str = f"N{nucleus_idx:0{max_digits}d}"
-        center = (x, y)
-        nuke_roi: Roi = Roi(
+
+        xpoints = np.array(coords[:, 0],dtype=np.int_)
+        ypoints = np.array(coords[:, 1],dtype=np.int_)
+        n = len(xpoints)
+
+
+        left, top, w, h = cv2.boundingRect(contour)
+        right= left + w
+        bottom = top + h
+
+        area=cv2.contourArea(contour)
+        roi_name: str = f"L{label_value:0{max_digits}d}"
+
+        nuke_roi = Roi(
             xpoints=xpoints,
             ypoints=ypoints,
-            name=nuke_roi_name,
-            bounds=(min_y, min_x, max_y, max_x),
-            center=center,
-            n=len(xpoints),
-            area=area,
-            state=Roi.ROI_STATE_ACTIVE
-            )
-        parent_cell_idx = cell_lbl_image[y, x]
-        if  parent_cell_idx > 0 and parent_rm is not None:
-            parent_cell_name = parent_rm.idx_to_name(parent_cell_idx)
-            parent_cell_roi = parent_rm.get_roi(parent_cell_name)
-            if parent_cell_roi:
-                nuke_roi.parent = parent_cell_roi
-                if nuke_roi.parent.children is None:
-                    nuke_roi.parent.children = list([nuke_roi])
-                else:
-                    nuke_roi.parent.children.append(nuke_roi)
-                if nuke_roi.parent.state == Roi.ROI_STATE_DELETED:
-                    nuke_roi.state = Roi.ROI_STATE_DELETED
+            name=roi_name,
+            bounds =(top,left,bottom,right),
+            center =(cx,cy),
+            state=Roi.ROI_STATE_DELETED,
+            n=n,
+            area=area
+        )
+        roi_array[label_value]=nuke_roi
 
-            
-        roi_list.append(nuke_roi)
+        parent_cell_idx = cell_lbl_image[cy, cx]
+        parent_cell_roi = (
+            parent_rm.get_roi(parent_rm.idx_to_name(parent_cell_idx))
+            if parent_cell_idx > 0 and parent_rm is not None
+            else None
+        )
+        nuke_roi.parent= None
+        d = distmap[cy, cx]
 
-
-
-        if distmap[y,x] < 0:
-            nuke_roi.state = Roi.ROI_STATE_DELETED
+        if d < 0:
+            deleted_nuclei += 1
             nuke_roi.tags.add("DELETED.OUTSIDE_CELL")
             continue
-        if distmap[y,x] < 2:
-            nuke_roi.state = Roi.ROI_STATE_DELETED
+        
+        nuke_roi.parent = parent_cell_roi
+        if not parent_cell_roi:
+            deleted_nuclei += 1
+            nuke_roi.tags.add("DELETED.OUTSIDE_CELL")
+            continue
+
+        if d < 2:
+            deleted_nuclei += 1
             nuke_roi.tags.add("DELETED.CLOSE_TO_CELL_BORDER")
+            continue
 
-    if skipped_nuclei > 0:
-        if skipped_nuclei == 1:
-            log(f"Skipped 1 malformed or too small nucleus", type="warning")
-        else:
-            log(f"Skipped {skipped_nuclei} malformed or too small nuclei", type="warning")
+        parent_cell_roi.children.append(nuke_roi)
+        if parent_cell_roi.state == Roi.ROI_STATE_DELETED:
+            deleted_nuclei += 1
+            nuke_roi.tags.add("DELETED.WITH_PARENT")
+            continue
 
+        nuke_roi.state = Roi.ROI_STATE_ACTIVE
 
-    return roi_list
+    if deleted_nuclei > 0:
+            if deleted_nuclei == 1:
+                log(f"Deleted 1 nucleus outside of cell or on edge of cell", type="info")
+            else:
+                log(f"Deleted {deleted_nuclei} nuclei outside of cell or on edge of cell", type="info")
+
+    StopWatch.stop("Building nuke ROIs")
+    return roi_array
 
 if __name__ == "__main__":
+
     # Input file
-    filename = "./RoiEditor/TestData/infolder/dir1/6_1.tif"
-    label_filename = "./RoiEditor/TestData/infolder/dir1/6_1_cp_masks.png"
+    filename = "C:\\Users\\bimba\\OneDrive\\Documenten\\source\\repos\\RoiProject\\RoiEditor\\tests\\TestData\\6_1.tif"
+    label_filename = "C:\\Users\\bimba\\OneDrive\\Documenten\\source\\repos\\RoiProject\\RoiEditor\\tests\\TestData\\6_1_cp_masks.png"
 
     bkg_image = imread(filename)
     cell_lbl_image = imread(label_filename)

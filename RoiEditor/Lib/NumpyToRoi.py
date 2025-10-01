@@ -13,7 +13,7 @@ import numpy as np
 import cv2
 
 from Roi import Roi
-from StopWatch import *
+
 from TinyRoiManager import TinyRoiManager
 from TinyLog import log
 
@@ -64,7 +64,8 @@ def process_label_image(rm: TinyRoiManager, data: dict, remove_edges: bool = Tru
     # Stap 5: zoek contouren
     contours, _ = cv2.findContours(cleaned, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    roi_array = np.full(shape=len(contours)+100,fill_value=None,dtype=Roi)
+    max = np.unique(masks).max()
+    roi_array = np.full(shape=max+1,fill_value=None,dtype=Roi)
     max_digits=len(str( len(roi_array) ))
     corr = np.sqrt(1.00215)
 

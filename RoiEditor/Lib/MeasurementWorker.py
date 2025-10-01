@@ -58,13 +58,18 @@ class MeasurementWorker(QRunnable):
 
 
 
-def compute_and_plot(rm: TinyRoiManager,hist_plot:HistogramFrame, msmts: RoiMeasurements):
-    def on_worker_done(msmts_param):
+def compute_and_plot(rm: TinyRoiManager,hist_plot:HistogramFrame, msmts: RoiMeasurements, on_finished_callback=None):
+    def on_worker_done(msmts):
         if HistogramFrame.is_histogram_populated(hist_plot):
             hist_plot.update_plot()
         else:
-            hist_plot.populate(msmts_param.measurement_names, "Area", msmts_param)
+            hist_plot.populate(msmts.measurement_names, "Area", msmts)
+
+
             hist_plot.show()
+
+        if on_finished_callback and callable(on_finished_callback):
+            on_finished_callback()
 
         log("Measurements available and plot updated", type="info", log_level=1000)
 
@@ -73,6 +78,6 @@ def compute_and_plot(rm: TinyRoiManager,hist_plot:HistogramFrame, msmts: RoiMeas
     worker.signals.finished.connect(on_worker_done)
 
     QThreadPool.globalInstance().start(worker)
-    # calculate_measurements(msmts)
-    # on_worker_done(msmts)
+    #calculate_measurements(msmts)
+    #on_worker_done(msmts)
 

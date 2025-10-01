@@ -12,6 +12,7 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 from typing import Optional,Tuple
 import numpy.typing as npt
+from nptyping import NDArray, Shape, Float64
 
 import warnings
 warnings.simplefilter("error")
@@ -52,7 +53,8 @@ class Roi:
         self._area: float | None = area
         self._center: Tuple[float, float] | None = center
         self._n: int | None = n
-        self.color =None
+        self.color: NDArray[Shape["1, 3"], Float64] | None = None  # a row vector with 3 columns H,S and V
+        self.color_dist: float | None =None
 
         if n is None and xpoints is not None:
             self._n = len(xpoints)
@@ -99,7 +101,7 @@ class Roi:
 
 
     @property
-    def area(self) -> float:
+    def area(self) -> Optional[float]:
         if self._xpoints is None or self._ypoints is None:
             self._area = None
             return self._area
@@ -113,17 +115,22 @@ class Roi:
         return self._area
 
     @property
-    def bounds(self) -> Tuple[int, int, int, int]:
+    def bounds(self) -> Tuple[int, int, int, int] | None:
         if self._bounds is None:
             #(top, left, bottom, right)
-            self._bounds=(np.min(self._ypoints), np.min(self._xpoints), np.max(self._ypoints), np.max(self._xpoints))
+            self._bounds = (
+                int(np.min(self._ypoints)),
+                int(np.min(self._xpoints)),
+                int(np.max(self._ypoints)),
+                int(np.max(self._xpoints))
+            )
         return self._bounds
     
     @property
-    def center(self) -> Tuple[int, int]:
+    def center(self) -> Tuple[float, float] | None:
         if self._center is None:
             # (cx,cy)
-            self._center=(np.mean(self._xpoints),np.mean(self._ypoints))
+            self._center=(float(np.mean(self._xpoints)), float(np.mean(self._ypoints)))
         return self._center
 
     

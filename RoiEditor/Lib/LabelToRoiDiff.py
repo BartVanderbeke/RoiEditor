@@ -32,11 +32,11 @@ def remove_internal_edges(label_img):
 
     h1 = img[:, :-1]
     h2 = img[:, 1:]
-    hor_edge = (h1 != h2) #(h1 != 0) & (h2 != 0) & (h1 != h2)
+    hor_edge = (h1 != h2) # & (h1 != 0) & (h2 != 0)
 
     v1 = img[:-1, :]
     v2 = img[1:, :]
-    ver_edge = (v1 != v2) #(v1 != 0) & (v2 != 0) & (v1 != v2)
+    ver_edge = (v1 != v2) #& (v1 != 0) & (v2 != 0)
 
     img[:, :-1][hor_edge] = 0
     img[:, 1:][hor_edge] = 0
@@ -83,9 +83,10 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     
     contours, _ = cv2.findContours(lbl_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    roi_array = np.full(shape=len(contours)+100,fill_value=None,dtype=Roi)
+    max = np.unique(label_image).max()
+    roi_array = np.full(shape=max+1,fill_value=None,dtype=Roi)
     max_digits=len(str( len(roi_array) ))
-    corr = np.sqrt(1.00215)
+    #corr = np.sqrt(1.00215)
 
     if not contours:
         log(f"label image does not contain contours!", type="warning")

@@ -2,6 +2,7 @@ import os
 import sys
 import numpy as np
 import cv2
+from nptyping import NDArray, Shape, Float64
 from PyQt6.QtWidgets import QApplication,QWidget
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
@@ -31,14 +32,16 @@ def test_hist():
     num_threads = 12
 
     rm = TinyRoiManager()
-    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TinyRoiFile.read(zip_path, label_image)
     for roi in rois:
         if roi:
             rm.add_unchecked(roi)
+            roi.color: NDArray[Shape["1, 3"], Float64] = np.array([0.0, 0.0, 0.0])
     rm.force_feret()
     
-    # fills the subset 'ALL'
+    
     msmts = RoiMeasurements(rm)
+    msmts.compute_stats_subset("ALL")
 
     subset_name="DELETED"
     deleted_filter = lambda roi: (roi.state==Roi.ROI_STATE_DELETED) if roi else False

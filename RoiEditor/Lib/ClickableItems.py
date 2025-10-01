@@ -1,25 +1,38 @@
+"""RoiEditor
+
+Author: Bart Vanderbeke & Elisa
+Copyright: © 2025
+License: MIT
+
+Parts of the code in this project have been derived from chatGPT suggestions.
+When code has been explicitly derived from someone else's code,
+I left the (GitHub) url of the original code next to the derived code.
+
+"""
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QPolygonF
 from PyQt6.QtWidgets import QGraphicsSimpleTextItem, QGraphicsPolygonItem
 
-from typing import Callable, Any
+from typing import Callable, Any, Optional
 
 from TinyLog import log
 from TinyRoiManager import TinyRoiManager
 from Roi import Roi
 
-def dummy_callback(str) -> None:
+def dummy_on_any_change_callback(s: str, b: Optional[bool] = None) -> None:
     log("ClickableItems: no on_change callback connected",type="error")
 def dummy_hover_callback(roi: Roi | None) -> None:
     log("ClickableItems: no hover callback connected",type="error")
+def dummy_on_alt_ctrl_click(roi: Roi, t: tuple[int,int]) -> None:
+    log("ClickableItems: no alt+ctrl click callback connected",type="error")
 
 class RoiClickablePolygonItem(QGraphicsPolygonItem):
     def __init__(self, polygon: QPolygonF, *,
                  roi: Roi,
                  rm: TinyRoiManager,
-                 on_any_change: Callable[[str,bool], None]=dummy_callback,
+                 on_any_change: Callable[[str,Optional[bool]], None] = dummy_on_any_change_callback,
                  on_hover: Callable[[Roi | None], None]=dummy_hover_callback,
-                 on_alt_ctrl_click: Callable[[Roi, tuple[int,int]], None]=None,
+                 on_alt_ctrl_click: Callable[[Roi, tuple[int,int]], None] = dummy_on_alt_ctrl_click,
                  parent=None):
         super().__init__(polygon, parent)
         self.on_any_change = on_any_change
@@ -47,7 +60,7 @@ class RoiClickablePolygonItem(QGraphicsPolygonItem):
         mods = event.modifiers()
         if mods == Qt.KeyboardModifier.NoModifier:
             self.rm.toggle_selection(roi_name)
-            self.on_any_change(f"ROI Left Click → toggling {roi_name}")
+            self.on_any_change(f"ROI Left Click → toggling {roi_name}", None)
             event.accept()
             return
         
@@ -69,7 +82,7 @@ class RoiClickablePolygonItem(QGraphicsPolygonItem):
                 event.accept()
                 return
             self.rm.delete(roi_name)
-            self.on_any_change(f"ROI Alt + Left Click → deleting {roi_name}")
+            self.on_any_change(f"ROI Alt + Left Click → deleting {roi_name}", None)
             event.accept()
             return
 

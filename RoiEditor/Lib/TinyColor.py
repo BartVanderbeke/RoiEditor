@@ -18,22 +18,13 @@ from TinyLog import log
 # Colormap: green → yellow → orange → red
 cmap = LinearSegmentedColormap.from_list("green_yellow_orange_red", [
     (0.0, "#00ff00"),
-    (0.33, "#ffff00"),
+    (0.33, "#ffc800"),
     (0.67, "#ff8000"),
-    (1.0, "#ff0000")
+    (1.0, "#ff2000")
 ])
 
 
 def values_to_qbrush_dict(rois, values, vmin, vmax):
-    if values.size == 0:
-        return {}
-
-    if vmax == vmin:
-        log(f"Warning: vmax ({vmax}) == vmin ({vmin}). All values set to 0.", type="info", log_level=1000)
-        normed = np.zeros_like(values, dtype=float)
-    else:
-        normed = (values - vmin) / (vmax - vmin)
-
-    rgba = cmap(normed)[:, :3]
+    rgba = cmap(values)[:, :3]
     rgb = (rgba * 255).astype(np.uint8)
     return {roi: QBrush(QColor(*c)) for roi, c in zip(rois, rgb)}

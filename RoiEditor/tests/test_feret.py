@@ -25,7 +25,7 @@ def test_feret():
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path,label_image, num_threads=num_threads)
+    rois = TinyRoiFile.read(zip_path,label_image)
     StopWatch.stop("roi read")
     results =[]
     print(f"#rois: {len(rois)}")
@@ -54,7 +54,7 @@ def test_feret():
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
     StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TinyRoiFile.read(zip_path, label_image)
     StopWatch.stop("roi read")
     results =[]
     print(f"#rois: {len(rois)}")

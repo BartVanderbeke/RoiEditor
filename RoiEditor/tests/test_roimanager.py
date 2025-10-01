@@ -25,7 +25,7 @@ def test_roimanager():
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
 
-    rois = TRF.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:
@@ -41,7 +41,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read & add 2")
-    rois = TRF.read_parallel(zip_out_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_out_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
 
     rm=TinyRoiManager()
@@ -70,7 +70,7 @@ def test_roimanager():
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TRF.read_parallel(zip_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_path, label_image, num_threads=num_threads)
     print(f"num of rois: {len(rois)}")
     for roi in rois:
         if roi:
@@ -88,7 +88,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read 2")
-    rois = TRF.read_parallel(zip_out_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_out_path, label_image, num_threads=num_threads)
     StopWatch.stop("roi read")
 
     rm = TinyRoiManager()

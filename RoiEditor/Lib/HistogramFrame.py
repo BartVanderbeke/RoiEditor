@@ -129,7 +129,7 @@ class HistogramFrame(QWidget):
     def closeEvent(self, event):
         # minimize iso closing
         self.showMinimized()
-        event.accept()
+        event.ignore()
 
 
     def showEvent(self, event):
