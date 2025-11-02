@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTableWidget,
     QTableWidgetItem, QSplitter, QHeaderView
 )
+from PyQt6.QtCore import Qt
 from pyqtgraph import PlotWidget
 import pyqtgraph as pg
 from PyQt6.QtGui import QColor
@@ -59,7 +60,8 @@ class HistogramFrame(QWidget):
     def __init__(self,on_measurement_selected: Callable[[str], None]=dummy_callback, parent=None):
         self._is_populated=False
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Window)
+        self.setWindowFlag(Qt.WindowType.Tool)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setFixedSize(600, 600)
         self.on_measurement_selected: Callable[[str], None]=on_measurement_selected
 
@@ -129,7 +131,7 @@ class HistogramFrame(QWidget):
     def closeEvent(self, event):
         # minimize iso closing
         self.showMinimized()
-        event.ignore()
+        event.accept()
 
 
     def showEvent(self, event):

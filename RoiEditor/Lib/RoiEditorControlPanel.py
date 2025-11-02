@@ -176,8 +176,9 @@ class RoiEditorControlPanel(QMainWindow):
                     continue
                 if name in ["RoiEditor - Control Panel","RoiEditor - Log Window","ROI Editor - Image Window"] or name.startswith("Histogram"):
                     log(f"Closing window: {name}",type="info",log_level=1000)
+                    widget.setParent(None)
                     widget.close()
-                    widget.deleteLater()
+                    #widget.deleteLater() <-- RoiImage & HistogramFrame now have deleteonclose set
 
 
 

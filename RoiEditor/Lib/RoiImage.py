@@ -18,7 +18,7 @@ from PyQt6.QtGui import (
     QImage, QPixmap, QPolygonF, QPen,QBrush,QPolygon
 )
 from PyQt6.QtGui import QGuiApplication
-from PyQt6.QtCore import QRect
+from PyQt6.QtCore import QRect, Qt
 from PyQt6.QtCore import Qt, QPointF, QTimer,QPoint
 from PyQt6.QtGui import QColor
 
@@ -75,7 +75,7 @@ class RoiImageWindow(QMainWindow):
                           QPointF(0.0, 0.0)])
     
     @staticmethod
-    def __x_polygon_at(cx:int,cy:int) -> QPolygon:
+    def __x_polygon_at(cx:int,cy:int) -> QPolygonF:
         poly = QPolygonF(RoiImageWindow.__x_polygon())
         poly.translate(cx,cy)
         return QPolygonF(poly)  
@@ -100,7 +100,8 @@ class RoiImageWindow(QMainWindow):
                  parent: QWidget | None = None):
         #self.parent =parent
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Window)
+        self.setWindowFlag(Qt.WindowType.Tool)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         super().move(-5000,-5000)
 
         self.on_add_nucleus_here = on_add_nucleus_here
@@ -415,5 +416,5 @@ class RoiImageWindow(QMainWindow):
     def closeEvent(self, event):
         # minimize iso closing
         self.showMinimized()
-        event.ignore()
+        event.accept()
 
