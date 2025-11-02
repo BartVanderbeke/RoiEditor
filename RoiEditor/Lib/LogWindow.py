@@ -22,6 +22,11 @@ class LogWindow(QWidget):
         super().move(-5000,-5000)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # hide the close button
+        flags = self.windowFlags()
+        flags &= ~Qt.WindowType.WindowCloseButtonHint
+        self.setWindowFlags(flags)
+
         self.setWindowTitle("RoiEditor - Log Window")
         self.resize(600, 400)
         layout = QVBoxLayout(self)

@@ -102,6 +102,12 @@ class RoiImageWindow(QMainWindow):
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+
+        # hide the close button
+        flags = self.windowFlags()
+        flags &= ~Qt.WindowType.WindowCloseButtonHint
+        self.setWindowFlags(flags)
+
         super().move(-5000,-5000)
 
         self.on_add_nucleus_here = on_add_nucleus_here

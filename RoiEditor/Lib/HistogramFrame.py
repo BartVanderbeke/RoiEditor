@@ -62,6 +62,11 @@ class HistogramFrame(QWidget):
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # hide the close button
+        flags = self.windowFlags()
+        flags &= ~Qt.WindowType.WindowCloseButtonHint
+        self.setWindowFlags(flags)        
+
         self.setFixedSize(600, 600)
         self.on_measurement_selected: Callable[[str], None]=on_measurement_selected
 
