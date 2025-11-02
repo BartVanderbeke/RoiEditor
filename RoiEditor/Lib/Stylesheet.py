@@ -8,11 +8,11 @@ Parts of the code in this project have been derived from chatGPT suggestions.
 When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
-"""
-# Stylesheet.py
-# chatGPT generated cellpose-like style
+"""# Stylesheet.py
+# cellpose-like dark style — clean PyQt6-compatible version
+# Author: Bart Vanderbeke & Elisa
 
-overall:str="""
+overall: str = """
             QWidget {
                 background-color: #111111;
                 color: white;
@@ -67,19 +67,16 @@ overall:str="""
                 background-color: #777;
             }
 
-            QCheckBox,QRadioButton {
-                color: #bd93f9;
-            }
-
             QDialog {
-                background-color: #111;
+                background-color: #111 !important;
             }
 
             QGraphicsView {
                 background-color: black;
             }
+
             QMainWindow {
-                background-color: black;
+                background-color: black !important;
             }
             
             QComboBox, QTableWidget {
@@ -88,15 +85,18 @@ overall:str="""
                 border-radius: 4px;
                 padding: 4px;
             }
+
             QHeaderView::section {
                 background-color: #444;
                 color: white;
                 border: 1px solid #666;
             }
+
             QStatusBar {
                 background-color: black;
-                border: none
+                border: none;
             }
+
             QFileDialog QTreeView {
                 background-color: #1e1e1e;
                 color: #cccccc;
@@ -110,9 +110,39 @@ overall:str="""
                 color: black;
             }
 
-            QFileDialog QLabel {
+            QFileDialog > QLabel {
                 color: #aaaaaa;
             }
+
+            /* --- Checkboxes --- */
+            QCheckBox {
+                color: #bd93f9;
+                spacing: 6px;
+            }
+
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+                border-radius: 3px;
+                border: 1px solid #888;
+                background-color: #555;
+            }
+
+            QCheckBox::indicator:unchecked {
+                background-color: #666;
+                border: 1px solid #999;
+            }
+
+            QCheckBox::indicator:checked {
+                background-color: #4488ff;
+                border: 1px solid #4488ff;
+            }
+
+            QCheckBox::indicator:hover {
+                background-color: #777;
+            }
+
+            /* --- Radiobuttons --- */
             QRadioButton {
                 color: #cccccc;
                 spacing: 6px;
@@ -122,27 +152,29 @@ overall:str="""
                 width: 14px;
                 height: 14px;
                 border-radius: 7px;
-                border: 1px solid #666666;
-                background-color: #2a2a2a;
+                border: 1px solid #888;
+                background-color: #555;
             }
 
             QRadioButton::indicator:unchecked {
-                background-color: #444444;   /* zacht grijs, subtiel zichtbaar op donkere bg */
-                border: 1px solid #666666;
+                background-color: #666;
+                border: 1px solid #999;
             }
 
             QRadioButton::indicator:checked {
-                background-color: #4488ff;   /* Cellpose-blauw */
+                background-color: #4488ff;
                 border: 1px solid #4488ff;
             }
+
+            QRadioButton::indicator:hover {
+                background-color: #777;
+            }
+
+            /* --- Tooltips --- */
             QToolTip {
-                background-color: #2a2a2a;   /* duidelijke donkere bubbel */
-                color: #ffffff;               /* goed contrast */
-                border: 1px solid #666666;    /* weer een rand zichtbaar */
-                padding: 6px;                 /* ruimte rond de tekst */
-            }            
+                background-color: #2a2a2a;
+                color: #ffffff;
+                border: 1px solid #666666;
+                padding: 6px;
+            }
         """
-        
-            # QFileDialog {
-                # background-color: #111;
-            # }

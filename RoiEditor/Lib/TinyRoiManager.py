@@ -24,10 +24,10 @@ from PyQt6.QtCore import QObject
 class TinyRoiManager(QObject):
 
 
-    __measurement_names = ["Area"] + feret_msmts + ["Central Nuclei"] +["Color"]
-    __quantities = ["area"] + feret_quantities + ["count"] + ["color"]
-    __units = ["px"] + feret_units + ["#"] + [""]
-    __scalers = [1.0*1.0] + feret_scalers + [1.0] + [1.0]
+    __measurement_names = ["Area"] + feret_msmts + ["Central Nuclei","Peripheral Nuclei"] +["Color"]
+    __quantities = ["area"] + feret_quantities + ["count","Count"] + ["color"]
+    __units = ["px"] + feret_units + ["#","#"] + [""]
+    __scalers = [1.0*1.0] + feret_scalers + [1.0, 1.0] + [1.0]
     __msmt_info = dict()
 
     for idx in range(len(__measurement_names)):
@@ -216,12 +216,20 @@ class TinyRoiManager(QObject):
             for feret_name, index in feret_index.items():
                 _result[feret_name].append(ferets[index])
             _result["Roi"].append(roi)
-            if roi.children:
-                num_central_nuclei = sum(1 for c in roi.children if c.state != Roi.ROI_STATE_DELETED)
-            else:
-                num_central_nuclei = 0
+            num_central_nuclei = 0
+            num_peripheral_nuclei = 0
+            roi_children = roi.children
+            if roi_children:
+                num_central_nuclei = sum(1 for c in roi_children if c.state != Roi.ROI_STATE_DELETED)
+                for c in roi_children:
+                    t = c.tags
+                    if not t:
+                        continue
+                    if "DELETED.CLOSE_TO_CELL_BORDER" in t:
+                        num_peripheral_nuclei += 1
+
             _result["Central Nuclei"].append(num_central_nuclei)
-   
+            _result["Peripheral Nuclei"].append(num_peripheral_nuclei)
         for key in keys:
             result[key]=np.array(_result[key])
 

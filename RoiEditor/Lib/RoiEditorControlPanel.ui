@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>425</width>
-    <height>800</height>
+    <height>640</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,19 +19,19 @@
   <property name="minimumSize">
    <size>
     <width>425</width>
-    <height>800</height>
+    <height>640</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>425</width>
-    <height>800</height>
+    <height>640</height>
    </size>
   </property>
   <property name="baseSize">
    <size>
     <width>425</width>
-    <height>800</height>
+    <height>640</height>
    </size>
   </property>
   <property name="toolTip">

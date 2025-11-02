@@ -129,7 +129,7 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
         bottom = top + h
 
         area=cv2.contourArea(contour)
-        roi_name: str = f"L{label_value:0{max_digits}d}"
+        roi_name: str = f"N{label_value:0{max_digits}d}"
 
         nuke_roi = Roi(
             xpoints=xpoints,
@@ -152,23 +152,26 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
         nuke_roi.parent= None
         d = distmap[cy, cx]
 
-        if d < 0:
-            deleted_nuclei += 1
-            nuke_roi.tags.add("DELETED.OUTSIDE_CELL")
-            continue
-        
         nuke_roi.parent = parent_cell_roi
         if not parent_cell_roi:
             deleted_nuclei += 1
             nuke_roi.tags.add("DELETED.OUTSIDE_CELL")
             continue
 
+        if d < 0:
+            deleted_nuclei += 1
+            nuke_roi.tags.add("DELETED.OUTSIDE_CELL")
+            continue
+
+        
+        # d >= 0 --> in cell
+        parent_cell_roi.children.append(nuke_roi)
         if d < 2:
             deleted_nuclei += 1
             nuke_roi.tags.add("DELETED.CLOSE_TO_CELL_BORDER")
             continue
 
-        parent_cell_roi.children.append(nuke_roi)
+        
         if parent_cell_roi.state == Roi.ROI_STATE_DELETED:
             deleted_nuclei += 1
             nuke_roi.tags.add("DELETED.WITH_PARENT")
