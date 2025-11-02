@@ -60,7 +60,7 @@ class HistogramFrame(QWidget):
     def __init__(self,on_measurement_selected: Callable[[str], None]=dummy_callback, parent=None):
         self._is_populated=False
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Tool)
+        self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setFixedSize(600, 600)
         self.on_measurement_selected: Callable[[str], None]=on_measurement_selected

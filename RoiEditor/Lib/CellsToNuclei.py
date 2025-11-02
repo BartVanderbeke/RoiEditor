@@ -26,6 +26,29 @@ from Roi import Roi
 from TinyRoiManager import TinyRoiManager
 from TinyLog import log
 
+def blue_world_white_balance(img_rgb, img_lbl=None):
+    img = img_rgb.astype(np.float32)
+    if img_lbl is not None:
+        mask = img_lbl > 0
+    else:
+        mask = np.ones(img.shape[:2], bool)
+
+    mean_r = np.mean(img[:,:,0][mask])
+    mean_g = np.mean(img[:,:,1][mask])
+    mean_b = np.mean(img[:,:,2][mask])
+
+    # not the the default Gray World algorithm, but
+    # reverse scaling! to remove a dominant color
+    max_mean = max(mean_b, mean_g, mean_r)
+    scale_b =  mean_b / max_mean
+    scale_g =  mean_g / max_mean
+    scale_r =  mean_r / max_mean
+
+    img_corr = img #.copy()
+    img_corr[:,:,0] *= scale_r
+    img_corr[:,:,1] *= scale_g
+    img_corr[:,:,2] *= scale_b
+    return np.clip(img_corr,0,255).astype(np.uint8)
 
 def __open_between_labels(label_img):
     """
@@ -66,6 +89,7 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
     StopWatch.start()
 
     img_rgb = bkg_image.copy()
+    #img_rgb = blue_world_white_balance(img_rgb, img_lbl=cell_lbl_image)
 
     img_hsv= cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV).astype(np.uint8)
     HH, SS, VV = img_hsv[...,0], img_hsv[...,1], img_hsv[...,2]

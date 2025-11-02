@@ -100,7 +100,7 @@ class RoiImageWindow(QMainWindow):
                  parent: QWidget | None = None):
         #self.parent =parent
         super().__init__(parent)
-        self.setWindowFlag(Qt.WindowType.Tool)
+        self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         super().move(-5000,-5000)
 

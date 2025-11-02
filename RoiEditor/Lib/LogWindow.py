@@ -20,7 +20,7 @@ class LogWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         super().move(-5000,-5000)
-        self.setWindowFlag(Qt.WindowType.Tool)
+        self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         self.setWindowTitle("RoiEditor - Log Window")
         self.resize(600, 400)
