@@ -837,7 +837,7 @@
             <item>
              <widget class="QCheckBox" name="cb_show_overlay">
               <property name="toolTip">
-               <string>Show the overaly indicating the distance to the median</string>
+               <string>Show the overlay indicating the distance to the median</string>
               </property>
               <property name="text">
                <string>Show overlay</string>

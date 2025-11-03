@@ -91,6 +91,7 @@ class Workbench(QWidget):
                  on_fail_to_build: Callable[[str],None]=dummy_callback_fail2build,
                  parent:QWidget|None=None):
         super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
 
         self.rm: dict[str,TinyRoiManager] = {}
         self.on_fail_to_write=on_fail_to_write
@@ -304,6 +305,8 @@ class Workbench(QWidget):
     def clean_up(self):
         if self.roi_window:
             self.roi_window.hide()
+        if self.hist_plot:
+            self.hist_plot.hide()
         if self.backup_timer:
             self.backup_timer.stop()
         log("ROIs will be backed up")

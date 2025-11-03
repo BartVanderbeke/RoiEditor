@@ -188,7 +188,7 @@ class RoiEditorControlPanel(QMainWindow):
         assert self.workbench is not None
         self.workbench.clean_up()
         self.workbench.setParent(None)
-        self.workbench.deleteLater()
+        self.workbench.close()
         self.workbench=None
         log("+++++", type="info")
         log("Cleaning up session", type="info")

@@ -64,7 +64,7 @@ class RoiImageWindow(QMainWindow):
         converts the xpoints and ypoints of the ROIs into polygons and shows them on the background image
         The polygons are cached for faster redrawing
     """
-    WIDGET_SIZE = 3
+    WIDGET_SIZE = 5
     @staticmethod
     def __x_polygon() -> QPolygonF:
         return QPolygonF([QPointF(-RoiImageWindow.WIDGET_SIZE, RoiImageWindow.WIDGET_SIZE),
@@ -181,9 +181,9 @@ class RoiImageWindow(QMainWindow):
         deleted_color  = QColor("#FF1000") #QColor("#C88D94")
 
         self.roi_style: Dict[int, Dict] = {
-            Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,0.75,Qt.PenStyle.SolidLine), "z": 2},
-            Roi.ROI_STATE_DELETED:  {"pen": QPen(deleted_color,0.5,Qt.PenStyle.SolidLine), "z": 1},
-            Roi.ROI_STATE_SELECTED: {"pen": QPen(selected_color,1.5,Qt.PenStyle.SolidLine), "z": 3}
+            Roi.ROI_STATE_ACTIVE:   {"pen": QPen(base_color,1,Qt.PenStyle.SolidLine), "z": 2},
+            Roi.ROI_STATE_DELETED:  {"pen": QPen(deleted_color,1,Qt.PenStyle.SolidLine), "z": 1},
+            Roi.ROI_STATE_SELECTED: {"pen": QPen(selected_color,2,Qt.PenStyle.SolidLine), "z": 3}
         }
         #self.roi_hover_style = {"pen": QPen(QColor("#FF10F0"),2,Qt.PenStyle.SolidLine), "z": 3}
 
