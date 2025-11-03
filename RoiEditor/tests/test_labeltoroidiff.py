@@ -62,7 +62,7 @@ def test_labeltoroidiff():
     StopWatch.start("dummy")
     StopWatch.stop("dummy")
     rm = TinyRoiManager()
-    label_image_path = test_path+"B_stitch_cp_masks.png"
+    label_image_path = test_path+"A_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
     print(np.unique(label_image))
     StopWatch.start("Detection starting")
@@ -77,7 +77,7 @@ def test_labeltoroidiff():
 
 
 
-    label_image_path = test_path+"B_stitch_cp_masks.png"
+    label_image_path = test_path+"A_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
     StopWatch.start("Detection starting")
     process_label_image(rm, label_image)
@@ -89,7 +89,7 @@ def test_labeltoroidiff():
     for name, roi in last_3:
         print(f"{name:8s} | {roi.n:3d} punten | state: {Roi.state_to_str(roi.state)} | tags: {roi.tags}")
 
-    label_image_path = test_path+"C_Stitch_cp_masks.png"
+    label_image_path = test_path+"C_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
     StopWatch.start("Detection starting")
     process_label_image(rm, label_image)

@@ -12,7 +12,7 @@ from StopWatch  import StopWatch
 def  test_numpytoroi():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
-    npy_path = test_path+'B_stitch_seg.npy'
+    npy_path = test_path+'A_stitch_seg.npy'
 
     StopWatch.start("dummy")
     StopWatch.stop("dummy")

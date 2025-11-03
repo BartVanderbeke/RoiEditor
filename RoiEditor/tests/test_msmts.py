@@ -2,7 +2,6 @@ import os
 import sys
 import numpy as np
 import cv2
-from nptyping import NDArray, Shape, Float64
 import random
 
 from PyQt6.QtWidgets import QApplication
@@ -11,6 +10,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
+from nptyping import NDArray, Shape, Float64
 import Context
 from TinyRoiFile import TinyRoiFile
 from StopWatch import StopWatch

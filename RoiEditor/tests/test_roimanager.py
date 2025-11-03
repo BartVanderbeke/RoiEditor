@@ -15,7 +15,7 @@ def test_roimanager():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
 
-    base_name=test_path+"B_Stitch"
+    base_name=test_path+"A_Stitch"
     zip_path = base_name+"_rois.zip"
     zip_out_path = base_name+"_RoiSet.zip"
     label_path = base_name+"_cp_masks.png"
@@ -25,7 +25,7 @@ def test_roimanager():
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
 
-    rois = TRF.read(zip_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_path, label_image)
     StopWatch.stop("roi read")
     for roi in rois:
         if roi:
@@ -41,7 +41,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read & add 2")
-    rois = TRF.read(zip_out_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_out_path, label_image)
     StopWatch.stop("roi read")
 
     rm=TinyRoiManager()
@@ -70,7 +70,7 @@ def test_roimanager():
 
     rm = TinyRoiManager()
     StopWatch.start("starting roi read")
-    rois = TRF.read(zip_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_path, label_image)
     print(f"num of rois: {len(rois)}")
     for roi in rois:
         if roi:
@@ -88,7 +88,7 @@ def test_roimanager():
     StopWatch.stop("roi write")
 
     StopWatch.start("starting roi read 2")
-    rois = TRF.read(zip_out_path, label_image, num_threads=num_threads)
+    rois = TRF.read(zip_out_path, label_image)
     StopWatch.stop("roi read")
 
     rm = TinyRoiManager()

@@ -20,7 +20,7 @@ def test_feret():
     num_threads = 12
 
 
-    base_name = test_path+"B_Stitch"
+    base_name = test_path+"A_Stitch"
     zip_path = base_name + "_rois.zip"
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
@@ -49,7 +49,7 @@ def test_feret():
 
     print(f"CSV saved to {csv_path}")
 
-    base_name = test_path+"B_Stitch"
+    base_name = test_path+"C_Stitch"
     zip_path = base_name + "_rois.zip"
     label_path = base_name+"_cp_masks.png"
     label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)

@@ -46,7 +46,7 @@ def  test_tinyroifile():
 
     # base_name = "A_Stitch"
     # loop(base_name)
-    base_name = "B_Stitch"
+    base_name = "A_Stitch"
     loop(base_name)
     base_name = "C_stitch"
     loop(base_name)

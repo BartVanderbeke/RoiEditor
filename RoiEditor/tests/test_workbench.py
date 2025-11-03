@@ -22,8 +22,8 @@ def test_workbench():
     
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")+'/'
-    original_file = test_path+"B_Stitch.tiff"
-    label_file = test_path+"B_Stitch_cp_masks.png"
+    original_file = test_path+"A_Stitch.tiff"
+    label_file = test_path+"A_Stitch_cp_masks.png"
     roi_file = None
     nuke_roi_file= None
     title = "set the scene"
@@ -45,8 +45,13 @@ def test_workbench():
 
     _ = QGraphicsTextItem("init")  
 
-    
-    dummy = QWidget()
+    class Widget(QWidget):
+        def eatAllEvents(self):
+            pass
+        def allowAllEvents(self):
+            pass
+
+    dummy = Widget()
     dummy.setStyleSheet(overall)
 
     files= {"org" : original_file,
@@ -58,10 +63,14 @@ def test_workbench():
 
 
     bench = Workbench(files,
-                 key_to_label_map = Context.key_to_label_map,
                  parent = dummy)
 
     window=bench.build()
+
+    if not window:
+        print("Failed to build")
+        exit(1)
+
     rm = bench.rm["cell"]
 
 

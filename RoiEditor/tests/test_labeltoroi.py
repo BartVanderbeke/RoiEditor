@@ -73,7 +73,7 @@ def test_labeltoroi():
     rois = list(rm.iter_all())
     last_3= rois[-3:]
 
-    label_image_path = test_path+"B_stitch_cp_masks.png"
+    label_image_path = test_path+"A_stitch_cp_masks.png"
     label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
     StopWatch.start("Detection starting")
     process_label_image(rm, label_image)

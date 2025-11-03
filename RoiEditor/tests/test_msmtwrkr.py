@@ -6,10 +6,11 @@ import cv2
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import  QTimer
 import random
-from nptyping import NDArray, Shape, Float64
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
+
+from nptyping import NDArray, Shape, Float64
 
 from TinyRoiManager import TinyRoiManager
 from TinyRoiFile import TinyRoiFile
@@ -21,7 +22,7 @@ from HistogramFrame import HistogramFrame
 from RoiMeasurements import RoiMeasurements
 from TinyLog import log
 from MeasurementWorker import compute_and_plot
-import random
+
 
 
 states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
