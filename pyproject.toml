@@ -4,25 +4,22 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "RoiEditor"
-version = "3.0.0"
+version = "3.0.1"
 description = "ROI Editor - a Python-app for managing (Fiji/cellpose) ROIs"
 authors = [{ name = "Bart Vanderbeke" }]
 readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.8"
 dependencies = [
-    "Pillow",
     "tifffile",
     "matplotlib",
     "scikit-image",
     "numpy",
-    "numba",
     "opencv-python",
     "pyqtgraph",
     "PyQt6",
     "XlsxWriter",
-    "lxml",
-    "nptyping"
+    "lxml"
 ]
 
 [project.scripts]

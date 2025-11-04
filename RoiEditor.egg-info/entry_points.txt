@@ -1,0 +1,2 @@
+[console_scripts]
+RoiEditor = RoiEditor.__main__:main

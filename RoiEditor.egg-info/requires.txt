@@ -1,0 +1,11 @@
+Pillow
+tifffile
+matplotlib
+scikit-image
+numpy
+numba
+opencv-python
+pyqtgraph
+PyQt6
+XlsxWriter
+lxml

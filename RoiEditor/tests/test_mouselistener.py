@@ -3,7 +3,7 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QPixmap,QImage
-from PIL import Image
+import cv2
 
 import numpy as np
 
@@ -51,7 +51,9 @@ class DummyMeasurements:
 
 
 def load_grayscale_image(path):
-    return np.array(Image.open(path).convert("L"))
+    img = cv2.imread(path, cv2.IMREAD_GRAYSCALE)
+
+    return np.array(img)
 
 
 def np_to_qimage(np_img):
