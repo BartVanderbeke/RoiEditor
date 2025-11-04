@@ -1,13 +1,13 @@
 @echo off
 setlocal
 
-echo [1/4] Downloading Python 3.11.0 (64-bit) installer
-set "PYTHON_URL=https://www.python.org/ftp/python/3.11.0/python-3.11.0-amd64.exe"
-set "PYTHON_INSTALLER=%TEMP%\python-3.11.0-amd64.exe"
+echo [1/4] Downloading Python 3.11.9 (64-bit) installer
+set "PYTHON_URL=https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe"
+set "PYTHON_INSTALLER=%TEMP%\python-3.11.9-amd64.exe"
 
 curl -L -o "%PYTHON_INSTALLER%" "%PYTHON_URL%"
 if errorlevel 1 (
-    echo [ERROR] Failed to download Python 3.11.0 installer
+    echo [ERROR] Failed to download Python 3.11.9 installer
     exit /b 1
 )
 
@@ -25,7 +25,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-echo [4/4] Python 3.11.0 installed successfully and added to PATH
+echo [4/4] Python 3.11.9 installed successfully and added to PATH
 python --version
 
 echo Done.

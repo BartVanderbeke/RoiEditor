@@ -4,7 +4,7 @@ Version: 3.0.1
 Summary: ROI Editor - a Python-app for managing (Fiji/cellpose) ROIs
 Author: Bart Vanderbeke
 License: MIT
-Requires-Python: >=3.8
+Requires-Python: <3.12,>=3.8
 Description-Content-Type: text/markdown
 Requires-Dist: tifffile
 Requires-Dist: matplotlib
