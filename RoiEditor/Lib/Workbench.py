@@ -374,7 +374,7 @@ class Workbench(QWidget):
                 log(f"An existing nucleus {roi.name} was clicked",type="info")
             roi.state = Roi.ROI_STATE_ACTIVE
             roi.tags= {x for x in roi.tags if not x.startswith("DELETED")}
-            editor = PolygonEditor(self.background_qimage,window_width=150, roi=roi)
+            editor = PolygonEditor(self.background_qimage,window_width=150, roi=roi,parent=self.roi_window)
             roi = editor.run()
             self.on_any_change()
             return

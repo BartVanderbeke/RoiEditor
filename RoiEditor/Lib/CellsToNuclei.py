@@ -88,19 +88,31 @@ def cells_to_nuclei(bkg_image: np.ndarray, cell_lbl_image: np.ndarray, parent_rm
 
     StopWatch.start()
 
-    img_rgb = bkg_image.copy()
+    img_rgb = np.ascontiguousarray(bkg_image)
     #img_rgb = blue_world_white_balance(img_rgb, img_lbl=cell_lbl_image)
 
-    img_hsv= cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV).astype(np.uint8)
-    HH, SS, VV = img_hsv[...,0], img_hsv[...,1], img_hsv[...,2]
+    img_hsv = cv2.cvtColor(img_rgb, cv2.COLOR_RGB2HSV)
+    if img_hsv.dtype != np.uint8:
+        # OpenCV expects uint8 for inRange; clip to avoid wrap-around on float/int images
+        img_hsv = np.clip(img_hsv, 0, 255).astype(np.uint8)
 
     # step 1: create mask for nuclei in fibers filtering on color
     # HSV are converted from the paint.net values to opencv values
-    mask_nuclei = (
-        (HH > 200//2) & (HH <= 300//2) & # CV2 HSV H 0..180 S 0..255 V 0..255
-        (SS > int(20.0/100.0*255.0)) &
-        (VV < int(235.0/100.0*255.0))
-    ).astype(np.uint8)
+    lower_hsv = np.array([
+        200 // 2,
+        int(20.0 / 100.0 * 255.0),
+        0
+    ], dtype=np.uint8)
+
+    upper_value = int(235.0 / 100.0 * 255.0)
+    upper_hsv = np.array([
+        300 // 2,
+        255,
+        min(upper_value, 255)
+    ], dtype=np.uint8)
+
+    mask_nuclei = cv2.inRange(img_hsv, lower_hsv, upper_hsv)
+    mask_nuclei //= 255  # connectedComponents expects binary 0/1
 
     opened_cell_lbl_img = __open_between_labels(cell_lbl_image).astype(np.uint8)
     opened_cell_lbl_img[opened_cell_lbl_img != 0] = 255

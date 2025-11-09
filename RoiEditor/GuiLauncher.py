@@ -47,7 +47,7 @@ def launch():
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("./Lib/icon.png"))
-    app.setQuitOnLastWindowClosed(True)
+    app.setQuitOnLastWindowClosed(False)
 
     from PyQt6.QtWidgets import QGraphicsTextItem
     _ = QGraphicsTextItem("warm up")

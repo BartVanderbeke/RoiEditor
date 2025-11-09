@@ -1,20 +1,24 @@
 import sys
 import numpy as np
 from PyQt6.QtWidgets import (
-    QApplication, QGraphicsScene, QGraphicsView, QGraphicsPixmapItem, QGraphicsEllipseItem
+    QApplication,
+    QGraphicsScene,
+    QGraphicsView,
+    QGraphicsPixmapItem,
+    QGraphicsEllipseItem,
+    QWidget,
+    QVBoxLayout,
 )
 from PyQt6.QtGui import QPixmap, QImage, QPolygonF, QPen, QBrush
-from PyQt6.QtCore import QRectF, QPointF, Qt, QObject, pyqtSignal, QEventLoop
+from PyQt6.QtCore import QRectF, QPointF, Qt, pyqtSignal, QEventLoop
 
 from Roi import Roi
 from TinyLog import log
 
 
 class TightFitGraphicsView(QGraphicsView):
-    close_using_key = False
-
-    def __init__(self, scene, editor=None):
-        super().__init__(scene)
+    def __init__(self, scene, editor, parent):
+        super().__init__(scene, parent)
         self.editor = editor
 
     def resizeEvent(self, event):
@@ -22,32 +26,24 @@ class TightFitGraphicsView(QGraphicsView):
         if self.scene():
             self.fitInView(self.sceneRect(), Qt.AspectRatioMode.KeepAspectRatio)
 
-    def closeEvent(self, event):
-        # Treat window close (X button) the same as Escape key
-        if not self.close_using_key:
-            log("Cancelled editing polygon -> ROI unchanged", type="warning")
-        if self.editor:
-            self.editor.cleanup()
-        event.accept()
-
 
 class VertexHandle(QGraphicsEllipseItem):
     """A draggable vertex handle that stays the same size on screen."""
 
     def __init__(self, x, y, radius_px, editor, index):
         r = float(radius_px)
-        super().__init__(-r, -r, 2 * r, 2 * r)  # centreer rond (0,0), gebruik radius
+        super().__init__(-r, -r, 2 * r, 2 * r)  # center around (0,0) using the radius
         self.setPos(x, y)
 
         pen = QPen(Qt.GlobalColor.blue, 1.0)
-        pen.setCosmetic(True)  # 1px op scherm
+        pen.setCosmetic(True)  # keep pen 1px on screen
         self.setPen(pen)
         self.setBrush(QBrush(Qt.GlobalColor.transparent))
 
-        # Belangrijk: handle blijft even groot in schermpixels, onafhankelijk van zoom
+        # Important: handle remains the same size in screen pixels regardless of zoom
         self.setFlag(QGraphicsEllipseItem.GraphicsItemFlag.ItemIgnoresTransformations, True)
 
-        # Interactie
+        # Interaction
         self.setFlags(
             QGraphicsEllipseItem.GraphicsItemFlag.ItemIsMovable
             | QGraphicsEllipseItem.GraphicsItemFlag.ItemSendsGeometryChanges
@@ -56,7 +52,7 @@ class VertexHandle(QGraphicsEllipseItem):
         self.setAcceptHoverEvents(True)
         self.setCursor(Qt.CursorShape.OpenHandCursor)
 
-        # Performance/visueel
+        # Performance/visuals
         self.setCacheMode(QGraphicsEllipseItem.CacheMode.DeviceCoordinateCache)
 
         self.editor = editor
@@ -81,42 +77,47 @@ class VertexHandle(QGraphicsEllipseItem):
         return super().itemChange(change, value)
 
 
-class PolygonEditor(QObject):
+class PolygonEditor(QWidget):
     finished = pyqtSignal(Roi)
 
-    def __init__(self, qimage, window_width, roi):
-        super().__init__()
+    def __init__(self, qimage, window_width, roi, parent):
+        super().__init__(parent)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        self.setWindowFlag(Qt.WindowType.Window)
+        self.setWindowTitle("Polygon Editor")
 
         if qimage is None:
             raise ValueError("qimage must not be None")
         if roi is None:
             raise ValueError("roi must not be None")
 
-        self.user_closes = False
-
         self.qimage = qimage
         self.window_width = int(window_width)
         self.processed_roi = roi
         self.cx, self.cy = roi.center
+        self._close_requested_by_code = False
 
         self.app = QApplication.instance() or QApplication(sys.argv)
 
         # Scene + view
         self.scene = QGraphicsScene()
-        self.view = TightFitGraphicsView(self.scene, editor=self)
-        self.view.setWindowTitle("Polygon Editor")
+        self.view = TightFitGraphicsView(self.scene, editor=self, parent=self)
+        layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self.view)
+        self.setLayout(layout)
 
         # Background image
         pixmap_item = QGraphicsPixmapItem(QPixmap.fromImage(self.qimage))
         pixmap_item.setZValue(10)  # Background
         self.scene.addItem(pixmap_item)
 
-        # Startkader rond (cx, cy)
+        # Initial frame around (cx, cy)
         half = self.window_width // 2
         initial_rect = QRectF(self.cx - half, self.cy - half, self.window_width, self.window_width)
         self.view.setSceneRect(initial_rect)
 
-        # Polygon initialisatie
+        # Polygon initialization
         if len(roi.xpoints) >= 3:
             points = [QPointF(x, y) for x, y in zip(roi.xpoints, roi.ypoints)]
         else:
@@ -128,9 +129,9 @@ class PolygonEditor(QObject):
         self.polygon_item = self.scene.addPolygon(self.qpolygon, self.polygon_pen)
         self.polygon_item.setZValue(500)  # Above image
 
-        # Handles toevoegen (vaste schermpixels)
+        # Add handles (fixed screen pixels)
         self.handles = []
-        HANDLE_RADIUS_PX = 6  # prettig vast te pakken
+        HANDLE_RADIUS_PX = 6  # easy to grab
         for i, pt in enumerate(points):
             h = VertexHandle(pt.x(), pt.y(), HANDLE_RADIUS_PX, self, i)
             h.setZValue(1000)
@@ -139,11 +140,11 @@ class PolygonEditor(QObject):
 
         # Key handling
         self.view.installEventFilter(self)
-        self.view.show()
+        self.show()
 
-        # Zoom iets ruimer rond de polygon
+        # Zoom slightly wider around the polygon
         bbox = self.qpolygon.boundingRect()
-        scale_factor = 1 / 0.8  # = 1.25 marges
+        scale_factor = 1 / 0.8  # adds a ~1.25 safety margin
         expanded = QRectF(
             bbox.center().x() - bbox.width() * scale_factor / 2,
             bbox.center().y() - bbox.height() * scale_factor / 2,
@@ -153,7 +154,7 @@ class PolygonEditor(QObject):
         if expanded.isValid() and expanded.width() > 0 and expanded.height() > 0:
             self.view.setSceneRect(expanded)
 
-        # Forceer 1px layout update zodat fitInView correct werkt
+        # Force a 1px layout update so fitInView recalculates properly
         w, h = self.view.width(), self.view.height()
         self.view.resize(w + 1, h + 1)
 
@@ -179,8 +180,8 @@ class PolygonEditor(QObject):
             # --- ROI accept/cancel ---
             if a1.key() == Qt.Key.Key_Escape:
                 log(f"Cancelled editing polygon-> ROI {self.processed_roi.name} unchanged")
-                self.view.close_using_key = True
-                self.cleanup()
+                self._close_requested_by_code = True
+                self.close()
                 return True
             elif a1.key() in (Qt.Key.Key_Return, Qt.Key.Key_Enter):
                 log(f"Changes to polygon accepted -> ROI {self.processed_roi.name} updated", type="happy")
@@ -189,16 +190,22 @@ class PolygonEditor(QObject):
                 self.processed_roi.xpoints, self.processed_roi.ypoints = None, None
                 self.processed_roi.xpoints = xs
                 self.processed_roi.ypoints = ys
-                self.view.close_using_key = True
-                self.cleanup()
+                self._close_requested_by_code = True
+                self.close()
                 return True
         return super().eventFilter(a0, a1)
 
+    def closeEvent(self, event):
+        if not self._close_requested_by_code:
+            log(f"Cancelled editing polygon -> ROI {self.processed_roi.name} unchanged", type="warning")
+        self.cleanup()
+        event.accept()
+        super().closeEvent(event)
+
     def cleanup(self):
-        if hasattr(self, "_cleaning_up") and self._cleaning_up:
+        if getattr(self, "_cleaning_up", False):
             return  # Prevent recursive cleanup calls
         self._cleaning_up = True
-        self.view.close()
         self.finished.emit(self.processed_roi)
 
     def run(self):
@@ -221,6 +228,7 @@ class PolygonEditor(QObject):
 # --- Demo usage ---
 if __name__ == "__main__":
     # Dummy image
+    app = QApplication.instance() or QApplication(sys.argv)
     img = np.zeros((300, 300, 3), dtype=np.uint8)
     img[100:200, 100:200] = [255, 255, 255]
     h, w, ch = img.shape
@@ -228,10 +236,11 @@ if __name__ == "__main__":
 
     roi = Roi(xpoints=[150], ypoints=[150], center=(150, 150), bounds=(150, 150, 150, 150))
 
-    editor = PolygonEditor(qimage, window_width=150, roi=roi)
+    demo_parent = QWidget()
+    editor = PolygonEditor(qimage, window_width=150, roi=roi, parent=demo_parent)
     result = editor.run()
     print("Result ROI:", result.xpoints, result.ypoints)
 
-    editor = PolygonEditor(qimage, window_width=150, roi=result)
+    editor = PolygonEditor(qimage, window_width=150, roi=result, parent=demo_parent)
     result2 = editor.run()
     print("Result ROI 2:", result2.xpoints, result2.ypoints)
