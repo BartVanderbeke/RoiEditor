@@ -65,7 +65,7 @@ class RoiEditorControlPanel(QMainWindow):
     ID_PIXEL = 1
     ID_FROM_FILE = 2
     ID_SPECIFIED = 3
-    def __init__(self,parent=None):
+    def __init__(self,parent):
         super().__init__(parent)
         super().move(-10000, -10000)
 
@@ -130,7 +130,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.event_eater_overlay.deactivate()
                       
 
-    def closeEvent(self, event):
+    def closeEvent(self, a0):
         if self.closing:
             return
         self.closing=True
@@ -144,8 +144,9 @@ class RoiEditorControlPanel(QMainWindow):
         self.close_windows([])
         super().close()
         self.deleteLater()
-        if event:
-            event.accept()
+        self.parentWidget().close()
+        if a0:
+            a0.accept()
 
 
     def on_previous(self):

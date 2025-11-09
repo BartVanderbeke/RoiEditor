@@ -47,7 +47,7 @@ def launch():
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("./Lib/icon.png"))
-    app.setQuitOnLastWindowClosed(False)
+    app.setQuitOnLastWindowClosed(True)
 
     from PyQt6.QtWidgets import QGraphicsTextItem
     _ = QGraphicsTextItem("warm up")
@@ -130,13 +130,13 @@ def launch():
     def attach_choosers():
         window.original_chooser = original_chooser
         window.original_chooser.setParent(window)
-        original_chooser.setWindowFlag(Qt.WindowType.Window)
+        original_chooser.setWindowFlag(Qt.WindowType.Dialog)
         window.label_chooser = label_chooser
         window.label_chooser.setParent(window)
-        label_chooser.setWindowFlag(Qt.WindowType.Window)
+        label_chooser.setWindowFlag(Qt.WindowType.Dialog)
         window.roi_chooser = roi_chooser
         window.roi_chooser.setParent(window)
-        roi_chooser.setWindowFlag(Qt.WindowType.Window)
+        roi_chooser.setWindowFlag(Qt.WindowType.Dialog)
 
 
     sys.exit(app.exec())
