@@ -2,10 +2,15 @@ import os
 import sys
 import numpy as np
 import cv2
-from nptyping import NDArray, Shape, Float64
-from PyQt6.QtWidgets import QApplication,QWidget
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
+from nptyping import NDArray, Shape, Float64
+from PyQt6.QtWidgets import QApplication,QWidget
+from PyQt6.QtCore import QTimer
 from Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info
 
 from RoiMeasurements import RoiMeasurements
@@ -24,7 +29,7 @@ def test_hist():
     test_path = os.path.join(base_path, "TestData")+'/'
 
 
-    base_name=test_path+"B_stitch"
+    base_name=test_path+"6"
     zip_path = base_name+"_rois.zip"
     zip_out_path = base_name+"_RoiSet.zip"
     label_path = base_name+"_cp_masks.png"
@@ -37,7 +42,6 @@ def test_hist():
         if roi:
             rm.add_unchecked(roi)
             roi.color: NDArray[Shape["1, 3"], Float64] = np.array([0.0, 0.0, 0.0])
-    rm.force_feret()
     
     
     msmts = RoiMeasurements(rm)
@@ -56,6 +60,9 @@ def test_hist():
     demo = HistogramFrame()
     demo.populate(msmts.measurement_names, "Area", msmts)
     demo.show()
+    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
+    if auto_close_ms > 0:
+        QTimer.singleShot(auto_close_ms, app.quit)
     sys.exit(app.exec())
 
 if __name__ == "__main__":

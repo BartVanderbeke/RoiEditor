@@ -19,6 +19,89 @@ import numpy as np
 from Roi import Roi
 from TinyLog import log
 
+from numba import njit
+
+
+@njit(cache=True)
+def _write_i16_be(out_buf, offset, value):
+    u16 = np.uint16(np.int32(value))
+    out_buf[offset] = np.uint8((u16 >> 8) & np.uint16(0xFF))
+    out_buf[offset + 1] = np.uint8(u16 & np.uint16(0xFF))
+
+
+@njit(cache=True)
+def _read_i16_be(in_buf, offset):
+    value = (np.int32(in_buf[offset]) << 8) | np.int32(in_buf[offset + 1])
+    if value >= 32768:
+        value -= 65536
+    return np.int32(value)
+
+
+@njit(cache=True)
+def _encode_roi_payload_jit(x_abs, y_abs, top, left, bottom, right, header_size, roi_type):
+    n = x_abs.shape[0]
+    out = np.zeros(header_size + (4 * n), dtype=np.uint8)
+    out[0] = np.uint8(73)   # I
+    out[1] = np.uint8(111)  # o
+    out[2] = np.uint8(117)  # u
+    out[3] = np.uint8(116)  # t
+    out[6] = np.uint8(roi_type)
+    _write_i16_be(out, 8, top)
+    _write_i16_be(out, 10, left)
+    _write_i16_be(out, 12, bottom)
+    _write_i16_be(out, 14, right)
+    _write_i16_be(out, 16, n)
+    x_offset = header_size
+    y_offset = header_size + (2 * n)
+    for i in range(n):
+        _write_i16_be(out, x_offset + (2 * i), np.int32(x_abs[i]) - left)
+        _write_i16_be(out, y_offset + (2 * i), np.int32(y_abs[i]) - top)
+    return out
+
+
+@njit(cache=True)
+def _decode_roi_payload_jit(raw, header_size):
+    top = _read_i16_be(raw, 8)
+    left = _read_i16_be(raw, 10)
+    bottom = _read_i16_be(raw, 12)
+    right = _read_i16_be(raw, 14)
+    n = _read_i16_be(raw, 16)
+    if n < 0:
+        n = 0
+    xpoints = np.empty(n, dtype=np.int32)
+    ypoints = np.empty(n, dtype=np.int32)
+    sum_x = 0.0
+    sum_y = 0.0
+    x_offset = header_size
+    y_offset = header_size + (2 * n)
+    for i in range(n):
+        rel_x = _read_i16_be(raw, x_offset + (2 * i))
+        rel_y = _read_i16_be(raw, y_offset + (2 * i))
+        abs_x = rel_x + left
+        abs_y = rel_y + top
+        xpoints[i] = abs_x
+        ypoints[i] = abs_y
+        sum_x += abs_x
+        sum_y += abs_y
+    if n > 0:
+        center_x = sum_x / n
+        center_y = sum_y / n
+    else:
+        center_x = 0.0
+        center_y = 0.0
+    return top, left, bottom, right, n, xpoints, ypoints, center_x, center_y
+
+
+def _encode_roi_payload(x_abs: np.ndarray, y_abs: np.ndarray, top: int, left: int, bottom: int, right: int, header_size: int, roi_type: int) -> bytes:
+    raw = _encode_roi_payload_jit(x_abs, y_abs, top, left, bottom, right, header_size, roi_type)
+    return raw.tobytes()
+
+
+def _decode_roi_payload(data: bytes, header_size: int):
+    raw = np.frombuffer(data, dtype=np.uint8)
+    top, left, bottom, right, n, xpoints, ypoints, center_x, center_y = _decode_roi_payload_jit(raw, header_size)
+    return int(top), int(left), int(bottom), int(right), int(n), xpoints, ypoints, (float(center_x), float(center_y))
+
 class TinyRoiFile:
     """
         TinyRoiFile implements a reader and writer for Fiji compatible ROI/zip files
@@ -40,29 +123,24 @@ class TinyRoiFile:
     def write_parallel(zip_path: str, roi_list: List[Optional[Roi]], num_threads: int = 4) -> None:
         def encode_roi(roi: Roi) -> tuple[str, bytes]:
             top, left, bottom, right = roi.bounds
-
-            x = (np.asarray(roi._xpoints, dtype=np.int16) - left).astype('>i2')  # big-endian int16
-            y = (np.asarray(roi._ypoints, dtype=np.int16) - top ).astype('>i2')
-            lx = len(x)
-            ly = len(y)
+            x_abs = np.asarray(roi._xpoints, dtype=np.int32)
+            y_abs = np.asarray(roi._ypoints, dtype=np.int32)
+            lx = len(x_abs)
+            ly = len(y_abs)
             if lx * ly == 0 or lx != ly:
                 log(f"Invalid ROI {roi.name} encountered while writing, length x = {lx}, length y = {ly}", type="error")
-
-            header = bytearray(TinyRoiFile.HEADER_SIZE)
-            header[0:4] = b'Iout'
-            header[6] = TinyRoiFile.ROI_TYPE_POLYGON
-            header[8:10]  = int(top).to_bytes(2, byteorder='big', signed=True)
-            header[10:12] = int(left).to_bytes(2, byteorder='big', signed=True)
-            header[12:14] = int(bottom).to_bytes(2, byteorder='big', signed=True)
-            header[14:16] = int(right).to_bytes(2, byteorder='big', signed=True)
-
-            header[16:18] = int(lx).to_bytes(2, byteorder='big', signed=True)
-
-            x_bytes = x.tobytes()
-            y_bytes = y.tobytes()
-            assert len(x_bytes) > 0 and len(y_bytes) > 0, "empty ROI"
-
-            return roi.name + ".roi", header + x_bytes + y_bytes
+            payload = _encode_roi_payload(
+                x_abs,
+                y_abs,
+                int(top),
+                int(left),
+                int(bottom),
+                int(right),
+                TinyRoiFile.HEADER_SIZE,
+                TinyRoiFile.ROI_TYPE_POLYGON,
+            )
+            assert len(payload) > TinyRoiFile.HEADER_SIZE, "empty ROI"
+            return roi.name + ".roi", payload
 
         roi_tasks = [roi for roi in roi_list if roi]
         num_tasks = len(roi_tasks)
@@ -224,25 +302,17 @@ class TinyRoiFile:
             log(f"File {name} contains a not supported ROI type: {roi_type}", type="error")
             return None
 
-        
-        top, left, bottom, right, n = np.frombuffer(data, dtype='>i2', count=5, offset=8)
+        if len(data) < TinyRoiFile.HEADER_SIZE:
+            log(f"File {name} is too short to contain a valid ROI header", type="error")
+            return None
 
-        HEADER_SIZE=TinyRoiFile.HEADER_SIZE
-        x = np.frombuffer(data[HEADER_SIZE : HEADER_SIZE + 2 * n], dtype='>i2').astype(np.int32)
-        y = np.frombuffer(data[HEADER_SIZE + 2 * n : HEADER_SIZE + 4 * n], dtype='>i2').astype(np.int32)
-
-        if x is None or y is None or len(x) == 0 or len(y) == 0:
+        top, left, bottom, right, n, xpoints, ypoints, center = _decode_roi_payload(data, TinyRoiFile.HEADER_SIZE)
+        if n <= 0 or len(xpoints) == 0 or len(ypoints) == 0:
             log(f"File {name} contains an empty ROI", type="error")
-            x=np.array([0])
-            y=np.array([0])
-            n=1
-
-        xpoints = x + left
-        ypoints = y + top
-
-
-
-        center=(np.mean(xpoints),np.mean(ypoints))
+            xpoints = np.array([0], dtype=np.int32)
+            ypoints = np.array([0], dtype=np.int32)
+            center = (0.0, 0.0)
+            n = 1
 
         return Roi(xpoints, ypoints, name=name, state=Roi.ROI_STATE_ACTIVE, center = center, bounds=(top, left, bottom, right), n=n)
 

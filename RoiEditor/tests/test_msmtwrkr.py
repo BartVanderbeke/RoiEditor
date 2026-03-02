@@ -6,6 +6,10 @@ import cv2
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import  QTimer
 import random
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
@@ -30,10 +34,11 @@ states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
 def test_msmtwrkr():
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "./TestData/")
+    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
 
-    base_name = test_path+"C_stitch"
+    base_name = test_path+"6"
     zip_path = base_name + "_rois.zip"
     zip_out_path = base_name + "_RoiSet.zip"
     label_path = base_name+"_cp_masks.png"
@@ -52,23 +57,27 @@ def test_msmtwrkr():
 
     hist_plot= HistogramFrame()
     msmts = RoiMeasurements(rm)
-    compute_and_plot(rm,hist_plot,msmts=msmts)
-    log("First round finished, waiting for updates (every 5s)")
+    if auto_close_ms > 0:
+        msmts.compute_stats_subset("ALL")
+        hist_plot.populate(msmts.measurement_names, "Area", msmts)
+        hist_plot.show()
+        QTimer.singleShot(auto_close_ms, app.quit)
+    else:
+        compute_and_plot(rm,hist_plot,msmts=msmts)
+        log("First round finished, waiting for updates (every 5s)")
 
-
-    l=[Roi.ROI_STATE_ACTIVE,Roi.ROI_STATE_SELECTED]
-    
-    def toggle_image():
-        log("Triggering update")
-        for _,roi in rm:
-            roi.state =  random.choice(states)
-        compute_and_plot(rm,hist_plot,msmts)
-
-
-    timer = QTimer()
-    timer.timeout.connect(toggle_image)
-    timer.start(5000)  
+        l=[Roi.ROI_STATE_ACTIVE,Roi.ROI_STATE_SELECTED]
         
+        def toggle_image():
+            log("Triggering update")
+            for _,roi in rm:
+                roi.state =  random.choice(states)
+            compute_and_plot(rm,hist_plot,msmts)
+
+
+        timer = QTimer()
+        timer.timeout.connect(toggle_image)
+        timer.start(5000)
 
     sys.exit(app.exec())
 

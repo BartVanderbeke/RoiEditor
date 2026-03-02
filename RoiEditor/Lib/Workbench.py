@@ -285,6 +285,9 @@ class Workbench(QWidget):
 
 
         self.hist_plot=QHF(parent=self,on_measurement_selected=self.on_measurement_selected)
+        # Keep first histogram callback from triggering an extra redraw:
+        # populate() starts with "Area", so pre-seed the image selection.
+        self.roi_window.selected_measurement = "Area"
 
         screen = QApplication.primaryScreen().availableGeometry()
         x = max(0,(screen.width() - self.hist_plot.width()))

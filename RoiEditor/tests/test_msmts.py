@@ -3,6 +3,10 @@ import sys
 import numpy as np
 import cv2
 import random
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 from PyQt6.QtWidgets import QApplication
 import matplotlib.pyplot as plt
@@ -31,8 +35,14 @@ def test_msmts():
 
 
 
+    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
+    def maybe_show(block: bool):
+        if auto_close_ms <= 0:
+            plt.show(block=block)
+
+
     #base_name = ".\TestData\A_stitch_RoiSet"
-    base_name = test_path+"C_stitch"
+    base_name = test_path+"6"
     zip_path = base_name + "_rois.zip"
     csv_path = base_name + ".csv"
     label_path = base_name+"_cp_masks.png"
@@ -49,9 +59,10 @@ def test_msmts():
             roi.color: NDArray[Shape["1, 3"], Float64] = np.array([0.0, 0.0, 0.0])
             roi.state= random.choice(states)
 
-    StopWatch.start("Feret")
-    rm.force_feret()
-    StopWatch.stop("Feret")
+    if auto_close_ms <= 0:
+        StopWatch.start("Feret")
+        rm.force_feret()
+        StopWatch.stop("Feret")
     
     StopWatch.start("msmts all")
     msmts = RoiMeasurements(rm)
@@ -71,7 +82,7 @@ def test_msmts():
     plt.xlabel("Area")
     plt.ylabel("Count")
     plt.grid(True)
-    plt.show(block=False)
+    maybe_show(block=False)
 
     stats_all_area = msmts.stats["ALL"]["Area"]
     print("\nALL - Area stats")
@@ -101,7 +112,7 @@ def test_msmts():
         plt.xlabel("Area")
         plt.ylabel("Count")
         plt.grid(True)
-        plt.show(block=False)
+        maybe_show(block=False)
     else:
         print("----No DELETED rois found----")
 
@@ -126,7 +137,7 @@ def test_msmts():
     plt.xlabel("Area")
     plt.ylabel("Count")
     plt.grid(True)
-    plt.show(block=False)
+    maybe_show(block=False)
 
 
     subset_name="BIG"
@@ -149,7 +160,7 @@ def test_msmts():
     plt.xlabel("Area")
     plt.ylabel("Count")
     plt.grid(True)
-    plt.show(block=False)
+    maybe_show(block=False)
 
 
     subset_name="SELECTED"
@@ -173,9 +184,12 @@ def test_msmts():
         plt.xlabel("Area")
         plt.ylabel("Count")
         plt.grid(True)
-        plt.show(block=True)
+        maybe_show(block=False)
     else:
         print("----No SELECTED rois found----")
-    plt.show(block=True)
+    if auto_close_ms > 0:
+        plt.close("all")
+    else:
+        maybe_show(block=True)
 if __name__ == "__main__":
         test_msmts()

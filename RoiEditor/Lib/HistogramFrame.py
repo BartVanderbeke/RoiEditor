@@ -59,6 +59,7 @@ class HistogramFrame(QWidget):
 
     def __init__(self,on_measurement_selected: Callable[[str], None]=dummy_callback, parent=None):
         self._is_populated=False
+        self._last_table_row_count = -1
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
@@ -154,17 +155,20 @@ class HistogramFrame(QWidget):
 
     def update_plot(self):
         self.plot_widget.clear()
-        self.table_widget.setRowCount(0)
+        stats_items = list(self.msmts.stats.items())
+        row_count = len(stats_items)
+        self.table_widget.setUpdatesEnabled(False)
+        self.table_widget.setRowCount(row_count)
         colors = ColorCycler()
-        for subset_name, _stats in self.msmts.stats.items():
+        for row_idx, (subset_name, _stats) in enumerate(stats_items):
             stats = _stats[self.selected_measurement]
             hist = stats["hist"]
             bin_edges = stats["bin_edges"]
             N = stats["N"]
-            unit = stats["unit"]
-
-            x_axis_label= f"{self.selected_measurement} ({unit})" if unit else f"{self.selected_measurement}"
-            self.plot_widget.setLabel('bottom', x_axis_label)
+            if row_idx == 0:
+                unit = stats["unit"]
+                x_axis_label = f"{self.selected_measurement} ({unit})" if unit else f"{self.selected_measurement}"
+                self.plot_widget.setLabel('bottom', x_axis_label)
 
             if isinstance(hist, np.ndarray) and len(hist) > 0 and isinstance(bin_edges, np.ndarray) and len(bin_edges) > 1:
                 # create staircases
@@ -194,12 +198,13 @@ class HistogramFrame(QWidget):
                 f"{format_float(iqr)}",
                 str(outliers)
             ]
-            row_idx = self.table_widget.rowCount()
-            self.table_widget.insertRow(row_idx)
             for col, val in enumerate(row_data):
                 self.table_widget.setItem(row_idx, col, QTableWidgetItem(val))
 
-        self.adjust_table_height()
+        if row_count != self._last_table_row_count:
+            self.adjust_table_height()
+            self._last_table_row_count = row_count
+        self.table_widget.setUpdatesEnabled(True)
 
 
     def adjust_table_height(self):

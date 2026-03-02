@@ -3,9 +3,14 @@ import sys
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtGui import QPixmap,QImage
+from PyQt6.QtCore import QTimer
 import cv2
 
 import numpy as np
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
@@ -64,6 +69,7 @@ def np_to_qimage(np_img):
 
 
 def test_mouselistener():
+    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(True)
 
@@ -114,6 +120,8 @@ def test_mouselistener():
     window.setCentralWidget(view)
 
     window.show()
+    if auto_close_ms > 0:
+        QTimer.singleShot(auto_close_ms, app.quit)
 
     sys.exit(app.exec())
 
@@ -121,7 +129,7 @@ def test_mouselistener():
 if __name__ == "__main__":
     base_path = os.path.dirname(__file__)
     test_path = os.path.join(base_path, "TestData")
-    LABEL_IMAGE_PATH = os.path.join(test_path,"A_Stitch_cp_masks.png")
-    REAL_IMAGE_PATH = os.path.join(test_path,"A_Stitch.tiff")
+    LABEL_IMAGE_PATH = os.path.join(test_path,"6_cp_masks.png")
+    REAL_IMAGE_PATH = os.path.join(test_path,"6.tif")
 
     test_mouselistener()

@@ -10,6 +10,7 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 
 import numpy as np
+from numba import njit
 
 
 # def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
@@ -38,6 +39,33 @@ import numpy as np
 
 #     return means
 
+@njit(cache=True)
+def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
+    max_label = int(np.max(label_image))
+    num_labels = max_label + 1
+    sums = np.zeros((num_labels, 3), dtype=np.float64)
+    counts = np.zeros(num_labels, dtype=np.int64)
+
+    height, width = label_image.shape
+    for y in range(height):
+        for x in range(width):
+            lbl = int(label_image[y, x])
+            counts[lbl] += 1
+            px = image_rgb[y, x]
+            sums[lbl, 0] += float(px[0])
+            sums[lbl, 1] += float(px[1])
+            sums[lbl, 2] += float(px[2])
+
+    out = np.zeros((num_labels, 3), dtype=np.float32)
+    for lbl in range(num_labels):
+        c = counts[lbl]
+        if c > 0:
+            inv = 1.0 / (float(c) * 255.0)
+            out[lbl, 0] = np.float32(sums[lbl, 0] * inv)
+            out[lbl, 1] = np.float32(sums[lbl, 1] * inv)
+            out[lbl, 2] = np.float32(sums[lbl, 2] * inv)
+
+    return out
 
 
 def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
@@ -45,24 +73,7 @@ def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
         raise ValueError("image_rgb must be (H, W, 3)")
     if label_image.ndim != 2 or label_image.shape != image_rgb.shape[:2]:
         raise ValueError("label_image must be (H, W) matching the image")
-
-    flat_labels = label_image.reshape(-1)
-    num_labels = int(flat_labels.max()) + 1  # labels 0..L
-
-    flat = image_rgb.reshape(-1, 3)          # uint8 ok
-    counts = np.bincount(flat_labels, minlength=num_labels).astype(np.float64)
-
-    # Sums per label per kanaal (float64 voorkomt precisieverlies)
-    sums_r = np.bincount(flat_labels, weights=flat[:, 0].astype(np.float64), minlength=num_labels)
-    sums_g = np.bincount(flat_labels, weights=flat[:, 1].astype(np.float64), minlength=num_labels)
-    sums_b = np.bincount(flat_labels, weights=flat[:, 2].astype(np.float64), minlength=num_labels)
-    sums = np.stack((sums_r, sums_g, sums_b), axis=1)  # (L,3)
-
-    # Gemiddelde in [0,1]; labels zonder pixels → 0
-    out = np.zeros((num_labels, 3), dtype=np.float32)
-    valid = counts > 0
-    out[valid] = (sums[valid] / (counts[valid, None] * 255.0)).astype(np.float32)
-    return out
+    return _average_color_jit(image_rgb, label_image)
 
 
 

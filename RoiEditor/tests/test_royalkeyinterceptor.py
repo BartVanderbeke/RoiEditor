@@ -2,7 +2,11 @@ import os
 import sys
 
 from PyQt6.QtWidgets import QApplication, QLabel,QMainWindow
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+if hasattr(sys.stderr, "reconfigure"):
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
@@ -12,6 +16,7 @@ from RoyalKeyInterceptor import RoyalKeyInterceptor
 
 
 def test_keyinterceptor():
+    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
 
     app = QApplication([])
     app.setQuitOnLastWindowClosed(True)
@@ -39,6 +44,8 @@ def test_keyinterceptor():
     window.installEventFilter(interceptor)
 
     window.show()
+    if auto_close_ms > 0:
+        QTimer.singleShot(auto_close_ms, app.quit)
     app.exec()
 
 if __name__ == "__main__":

@@ -19,7 +19,8 @@ dependencies = [
     "pyqtgraph",
     "PyQt6",
     "XlsxWriter",
-    "lxml"
+    "lxml",
+    "numba"
 ]
 
 [project.scripts]

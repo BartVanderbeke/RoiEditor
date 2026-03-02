@@ -11,6 +11,7 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import numpy as np
 import cv2
+from numba import njit
 
 from Roi import Roi
 from TinyRoiManager import TinyRoiManager
@@ -22,47 +23,94 @@ state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         3: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"]))
 }
 
+
+@njit(cache=True)
+def _remove_internal_edges_jit(label_img):
+    result = label_img.copy()
+    height, width = label_img.shape
+
+    for y in range(height):
+        for x in range(width - 1):
+            if label_img[y, x] != label_img[y, x + 1]:
+                result[y, x] = 0
+                result[y, x + 1] = 0
+
+    for y in range(height - 1):
+        for x in range(width):
+            if label_img[y, x] != label_img[y + 1, x]:
+                result[y, x] = 0
+                result[y + 1, x] = 0
+
+    return result
+
+
+@njit(cache=True)
+def _to_binary_u8_jit(label_img):
+    height, width = label_img.shape
+    out = np.zeros((height, width), dtype=np.uint8)
+
+    for y in range(height):
+        for x in range(width):
+            if label_img[y, x] > 0:
+                out[y, x] = np.uint8(255)
+
+    return out
+
+
+@njit(cache=True)
+def _get_edge_labels_jit(label_image):
+    max_label = int(np.max(label_image))
+    if max_label <= 0:
+        return np.empty((0,), dtype=np.int32)
+
+    seen = np.zeros(max_label + 1, dtype=np.uint8)
+    height, width = label_image.shape
+
+    for x in range(width):
+        top_value = int(label_image[0, x])
+        bottom_value = int(label_image[height - 1, x])
+        if top_value > 0:
+            seen[top_value] = 1
+        if bottom_value > 0:
+            seen[bottom_value] = 1
+
+    for y in range(height):
+        left_value = int(label_image[y, 0])
+        right_value = int(label_image[y, width - 1])
+        if left_value > 0:
+            seen[left_value] = 1
+        if right_value > 0:
+            seen[right_value] = 1
+
+    count = 0
+    for label in range(1, max_label + 1):
+        if seen[label] != 0:
+            count += 1
+
+    out = np.empty((count,), dtype=np.int32)
+    idx = 0
+    for label in range(1, max_label + 1):
+        if seen[label] != 0:
+            out[idx] = label
+            idx += 1
+
+    return out
+
+
 def remove_internal_edges(label_img):
     """
         creates openings between adjacent labels or
         transitions from background to a label
         so findContours can be applied to the complete image
     """
-    img = label_img.copy()
-
-    h1 = img[:, :-1]
-    h2 = img[:, 1:]
-    hor_edge = (h1 != h2) # & (h1 != 0) & (h2 != 0)
-
-    v1 = img[:-1, :]
-    v2 = img[1:, :]
-    ver_edge = (v1 != v2) #& (v1 != 0) & (v2 != 0)
-
-    img[:, :-1][hor_edge] = 0
-    img[:, 1:][hor_edge] = 0
-    img[:-1, :][ver_edge] = 0
-    img[1:, :][ver_edge] = 0
-
-    return img.astype(np.uint8)
+    return _remove_internal_edges_jit(label_img).astype(np.uint8)
 
 def erase_label_edges(label_img):
     """
         creates openings between adjacent labels by using a diff,
         so findContours can be applied to the complete image
     """
-    result = label_img.copy()
-
-    # Horizontal transitions
-    diff_h = label_img[:, :-1] != label_img[:, 1:]
-    result[:, :-1][diff_h] = 0
-    result[:,  1:][diff_h] = 0
-
-    # Vertical transitions
-    diff_v = label_img[:-1, :] != label_img[1:, :]
-    result[:-1, :][diff_v] = 0
-    result[ 1:, :][diff_v] = 0
-
-    return result
+    return _remove_internal_edges_jit(label_img)
 
 def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edges: bool = True, remove_small: bool = True, size_threshold: int = 100) -> None:
     """ this implementation first vreates a gap with background value around each ROI
@@ -79,12 +127,12 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
         edge_set = set(get_edge_labels(label_image))
 
     lbl_img = remove_internal_edges(label_image)
-    lbl_img = (lbl_img > 0).astype(np.uint8) * 255
+    lbl_img = _to_binary_u8_jit(lbl_img)
     
     contours, _ = cv2.findContours(lbl_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-    max = np.unique(label_image).max()
-    roi_array = np.full(shape=max+1,fill_value=None,dtype=Roi)
+    max_label = int(np.max(label_image))
+    roi_array = np.full(shape=max_label+1,fill_value=None,dtype=Roi)
     max_digits=len(str( len(roi_array) ))
     #corr = np.sqrt(1.00215)
 
@@ -154,15 +202,4 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     rm.add_from_list_unchecked(roi_array)
 
 def get_edge_labels(label_image: np.ndarray) -> np.ndarray:
-
-  top = label_image[0, :]
-  bottom = label_image[-1, :]
-  left = label_image[:, 0]
-  right = label_image[:, -1]
-  
-  border_values = np.concatenate([top, bottom, left, right])
-  
-  unique_labels = np.unique(border_values)
-  unique_labels = unique_labels[unique_labels != 0]
-  
-  return unique_labels
+    return _get_edge_labels_jit(label_image)
