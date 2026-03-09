@@ -3,7 +3,7 @@
 **ROI Editor** is an interactive Python application for managing, editing, and analyzing Regions of Interest (ROIs) in image data.
 The goal of RoiEditor is to remove “bad ROIs” from microscope images and to generate the data to perform statistics on the basic ROI properties: area and the Feret-parameters.
 RoiEditor 2.0 has extended editing capabilities, but lacks the erosion and multiple slice functionality of the Fiji plugin [LabelsToRois](https://labelstorois.github.io/). RoiEditor 2.0 is a standalone implementation of RoiEditor using regular Python aka CPython.
-RoiEditor cannot cells/fibers ROIs in photographs. [cellpose](https://www.cellpose.org/) is used for that purpose.
+RoiEditor cannot segment cells/fibers ROIs in photographs. [cellpose](https://www.cellpose.org/) is used for that purpose.
 **RoiEditor 3.0** now has a naive nucleus detector. Nuclei are managed in the same way as the fibers/cells. Additionally the user can manually add nuclei and edit their perimeter polygons.
 
 
@@ -39,6 +39,7 @@ RoiEditor allows labeling the deleted ROIs with the reason of their deletion. Wh
 ## ✨ Workflow
 The plot below shows the integrated workflow using [cellpose](https://www.cellpose.org/) and RoiEditor.<br>
 <img src=".\assets\RoiEditorWorkflow.svg" alt="cellpose and RoiEditor integrated workflow" width="600"/>
+
 
 
 
