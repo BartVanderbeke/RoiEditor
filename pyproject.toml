@@ -9,7 +9,7 @@ description = "ROI Editor - a Python-app for managing (Fiji/cellpose) ROIs"
 authors = [{ name = "Bart Vanderbeke" }]
 readme = "README.md"
 license = {text = "MIT"}
-requires-python = ">=3.8, <3.12"
+requires-python = ">=3.8, <3.13"
 dependencies = [
     "tifffile",
     "matplotlib",
