@@ -25,7 +25,7 @@ module_to_pip = {
     'typing': None,          # standaardmodule (vanaf Python 3.5)
     'datetime': None,        # standaardmodule
     'csv': None,             # standaardmodule
-    'cv2': 'opencv-python',
+    'cv2': 'opencv-python-headless',
     'pyqtgraph': 'pyqtgraph',
     'zipfile': None,         # standaardmodule
     'PyQt6': 'PyQt6',
