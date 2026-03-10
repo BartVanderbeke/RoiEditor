@@ -1,9 +1,0 @@
-tifffile
-matplotlib
-scikit-image
-numpy
-opencv-python
-pyqtgraph
-PyQt6
-XlsxWriter
-lxml
