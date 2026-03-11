@@ -9,8 +9,8 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from Stylesheet import overall
-from FileChoosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
+from stylesheet import overall
+from file_choosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
 
 def test_choosers():
     auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")

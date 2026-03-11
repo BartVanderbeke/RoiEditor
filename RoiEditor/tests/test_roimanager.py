@@ -6,9 +6,9 @@ import cv2
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from TinyRoiManager import TinyRoiManager
-from TinyRoiFile import TinyRoiFile as TRF
-from StopWatch import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from tiny_roi_file import TinyRoiFile as TRF
+from stop_watch import StopWatch
 
 
 def test_roimanager():

@@ -12,11 +12,11 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from StopWatch import StopWatch
+from stop_watch import StopWatch
 from workbench import Workbench
-import Context
+import context as Context
 
-from RoiSelect import select_outer_rois_vdb5,select_outer_rois_vdb,select_outer_rois_vdb3,select_outer_rois_vdb4
+from roi_select import select_outer_rois_vdb5,select_outer_rois_vdb,select_outer_rois_vdb3,select_outer_rois_vdb4
 
 def test_roiselect():
     base_path = os.path.dirname(__file__)

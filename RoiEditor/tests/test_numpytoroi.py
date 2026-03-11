@@ -5,9 +5,9 @@ import numpy as np
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from TinyRoiManager import TinyRoiManager
-from NumpyToRoi import process_label_image
-from StopWatch  import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from numpy_to_roi import process_label_image
+from StopWatch  import stop_watch
 
 def  test_numpytoroi():
     base_path = os.path.dirname(__file__)

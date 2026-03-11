@@ -1,0 +1,218 @@
+"""RoiEditor
+
+Author: Bart Vanderbeke & Elisa
+Copyright: © 2025
+License: MIT
+
+Parts of the code in this project have been derived from chatGPT suggestions.
+When code has been explicitly derived from someone else's code,
+I left the (GitHub) url of the original code next to the derived code.
+
+"""
+import sys
+import numpy as np
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QTableWidget,
+    QTableWidgetItem, QSplitter, QHeaderView
+)
+from PyQt6.QtCore import Qt
+from pyqtgraph import PlotWidget
+import pyqtgraph as pg
+from PyQt6.QtGui import QColor
+from PyQt6.QtCore import Qt
+
+from crumbs import format_float
+from tiny_log import log
+
+class ColorCycler(object):
+    def __init__(self):
+        self.colors = [
+            QColor(Qt.GlobalColor.blue),
+            QColor(Qt.GlobalColor.green),
+            QColor(Qt.GlobalColor.red),
+            QColor(255, 255, 0),        # yellow
+            QColor(Qt.GlobalColor.magenta),
+            QColor(255, 165, 0),        # orange
+            QColor(255, 192, 203)       # pink
+        ]
+        self.index = 0
+
+    def next(self):
+        color = self.colors[self.index]
+        self.index = (self.index + 1) % len(self.colors)
+        return color
+
+from typing import Callable
+class HistogramFrame(QWidget):
+    @classmethod
+    def is_histogram_populated(cls,histogram: "HistogramFrame"):
+        return histogram is not None and histogram.is_populated
+
+    @property
+    def is_populated(self):
+        return self._is_populated
+
+    @staticmethod
+    def dummy_callback(msmt_name:str):
+        log(f"Histogram dummy callback: {msmt_name} selected",type="error")
+
+
+    def __init__(self,on_measurement_selected: Callable[[str], None]=dummy_callback, parent=None):
+        self._is_populated=False
+        self._last_table_row_count = -1
+        super().__init__(parent)
+        self.setWindowFlag(Qt.WindowType.Window)
+        self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        # hide the close button
+        flags = self.windowFlags()
+        flags &= ~Qt.WindowType.WindowCloseButtonHint
+        self.setWindowFlags(flags)        
+
+        self.setFixedSize(600, 600)
+        self.on_measurement_selected: Callable[[str], None]=on_measurement_selected
+
+    def populate(self, measurement_names, selected_measurement, msmts,parent=None):
+        from stylesheet import overall
+        self.setStyleSheet(overall)
+
+        self.measurement_names = measurement_names
+        self.selected_measurement = selected_measurement
+        self.msmts = msmts
+
+        self.setWindowTitle(f"Histogram: {self.selected_measurement}")
+
+
+        pg.setConfigOption('background', '#2b2b2b')
+        pg.setConfigOption('foreground', 'w')
+
+        layout = QVBoxLayout() # parent=self
+        top_panel = QHBoxLayout() # parent=layout
+
+        self.dropdown = QComboBox() # parent=top_panel
+        self.dropdown.addItems(self.measurement_names)
+        self.dropdown.setCurrentText(self.selected_measurement)
+        self.dropdown.currentIndexChanged.connect(self.on_select_measurement)
+        lbl = QLabel(text="Measurement:",parent=self)
+        top_panel.addWidget(lbl)
+        top_panel.addWidget(self.dropdown)
+
+        layout.addLayout(top_panel)
+
+        self.plot_widget = PlotWidget()
+        self.plot_widget.addLegend(offset=(-10, 10), anchor=(1, 0))
+        self.plot_widget.setLabel('left', 'Frequency')
+        unit = self.msmts.stats["ALL"][self.selected_measurement]["unit"]
+        x_axis_label= f"{self.selected_measurement} ({unit})" if unit else f"{self.selected_measurement}"
+        self.plot_widget.setLabel('bottom', x_axis_label)
+        self.plot_widget.showGrid(x=True, y=True, alpha=0.3)
+        view_box = self.plot_widget.getViewBox()
+        view_box.setMouseEnabled(x=False, y=False)
+        view_box.setMenuEnabled(False)
+        self.plot_widget.setInteractive(False)
+
+
+        self.table_widget = QTableWidget(0, 8)
+        self.table_widget.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        from PyQt6.QtWidgets import QAbstractScrollArea
+        self.table_widget.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self.table_widget.setHorizontalHeaderLabels([
+            "roi set", "N", "average", "stdev", "median", "MAD", "IQR", "Outliers"
+        ])
+        self.table_widget.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+
+        splitter = QSplitter(parent=self)
+        splitter.setChildrenCollapsible(False)
+        splitter.setOrientation(Qt.Orientation.Vertical)
+        splitter.addWidget(self.plot_widget)
+        splitter.addWidget(self.table_widget)
+        splitter.setSizes([400, 200])
+
+        layout.addWidget(splitter)
+        self.setLayout(layout)
+
+        self.update_plot()
+        self._is_populated=True
+        self.on_measurement_selected(self.selected_measurement)
+
+    def closeEvent(self, event):
+        # minimize iso closing
+        self.showMinimized()
+        event.accept()
+
+
+    def showEvent(self, event):
+        self.raise_()
+        self.activateWindow()
+        super().showEvent(event)
+
+    def on_select_measurement(self, index):
+        new_measurement = self.dropdown.currentText()
+        if new_measurement != self.selected_measurement:
+            self.selected_measurement = new_measurement
+            self.setWindowTitle(f"Histogram: {self.selected_measurement}")
+            self.update_plot()
+            self.on_measurement_selected(new_measurement)
+
+    def update_plot(self):
+        self.plot_widget.clear()
+        stats_items = list(self.msmts.stats.items())
+        row_count = len(stats_items)
+        self.table_widget.setUpdatesEnabled(False)
+        self.table_widget.setRowCount(row_count)
+        colors = ColorCycler()
+        for row_idx, (subset_name, _stats) in enumerate(stats_items):
+            stats = _stats[self.selected_measurement]
+            hist = stats["hist"]
+            bin_edges = stats["bin_edges"]
+            N = stats["N"]
+            if row_idx == 0:
+                unit = stats["unit"]
+                x_axis_label = f"{self.selected_measurement} ({unit})" if unit else f"{self.selected_measurement}"
+                self.plot_widget.setLabel('bottom', x_axis_label)
+
+            if isinstance(hist, np.ndarray) and len(hist) > 0 and isinstance(bin_edges, np.ndarray) and len(bin_edges) > 1:
+                # create staircases
+                x = np.repeat(bin_edges, 2)[1:-1]
+                y = np.repeat(hist, 2)[:-1]
+
+                color = colors.next()
+                legend_label = f"{subset_name}:{self.selected_measurement}"
+                self.plot_widget.plot(x, y, pen=pg.mkPen(color=color, width=1.5), stepMode="center", name=legend_label)
+
+            average = stats["mean"]
+            stdev = stats["stdev"]
+            median = stats["median"]
+            mad = stats["mad"]
+            q1 = stats["q1"]
+            q3 = stats["q3"]
+            iqr = q3 - q1
+            outliers = stats.get("num_outliers", 0)
+
+            row_data = [
+                subset_name,
+                str(N),
+                f"{format_float(average)}",
+                f"{format_float(stdev)}",
+                f"{format_float(median)}",
+                f"{format_float(mad)}",
+                f"{format_float(iqr)}",
+                str(outliers)
+            ]
+            for col, val in enumerate(row_data):
+                self.table_widget.setItem(row_idx, col, QTableWidgetItem(val))
+
+        if row_count != self._last_table_row_count:
+            self.adjust_table_height()
+            self._last_table_row_count = row_count
+        self.table_widget.setUpdatesEnabled(True)
+
+
+    def adjust_table_height(self):
+        self.table_widget.setMinimumHeight(0)
+        self.table_widget.setMaximumHeight(16777215)
+        self.table_widget.resizeRowsToContents()
+        height = self.table_widget.horizontalHeader().height()
+        for row in range(self.table_widget.rowCount()):
+            height += self.table_widget.rowHeight(row)
+        self.table_widget.setMaximumHeight(height + 4)
+

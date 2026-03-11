@@ -9,8 +9,8 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from Stylesheet import overall
-from FileDialog import FileDialog
+from stylesheet import overall
+from file_dialog import FileDialog
 
 def test_dialog():
     auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")

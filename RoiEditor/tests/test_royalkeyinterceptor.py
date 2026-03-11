@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
 
-from RoyalKeyInterceptor import RoyalKeyInterceptor
+from royal_key_interceptor import RoyalKeyInterceptor
 
 
 def test_keyinterceptor():

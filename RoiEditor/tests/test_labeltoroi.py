@@ -11,10 +11,10 @@ import math
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from TinyRoiManager import TinyRoiManager
-from LabelToRoi import process_label_image
-from StopWatch import StopWatch
-from Roi import Roi
+from tiny_roi_manager import TinyRoiManager
+from label_to_roi import process_label_image
+from stop_watch import StopWatch
+from roi import Roi
 
 
 def show_contours(contours):

@@ -16,16 +16,16 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../L
 
 from nptyping import NDArray, Shape, Float64
 
-from TinyRoiManager import TinyRoiManager
-from TinyRoiFile import TinyRoiFile
-from StopWatch import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from tiny_roi_file import TinyRoiFile
+from stop_watch import StopWatch
 
 
-from Roi import Roi
-from HistogramFrame import HistogramFrame
-from RoiMeasurements import RoiMeasurements
-from TinyLog import log
-from MeasurementWorker import compute_and_plot
+from roi import Roi
+from histogram_frame import HistogramFrame
+from roi_measurements import RoiMeasurements
+from tiny_log import log
+from measurement_worker import compute_and_plot
 
 
 
