@@ -238,15 +238,7 @@ class RoiImageWindow(QMainWindow):
                                     on_hover=self.on_hover_nucleus,
                                     on_alt_ctrl_click=self.on_add_nucleus_here,
                                     parent= self.root_item)
-        # roi_sample: Roi = self.cell_rm.get_sample()
-        # name=roi_sample.name
-        # dummy_text = QGraphicsSimpleTextItem(name)
-        # dummy_text.setPen(QPen(Qt.PenStyle.NoPen))
-        # bounding = dummy_text.boundingRect()
-        # bw2 = bounding.width() / 2
-        # bh2= bounding.height() / 2
-        # self.text_offset = (bw2,bh2)
-        # dummy_text,roi_sample,name,bounding = None,None,None,None
+
 
 
 
