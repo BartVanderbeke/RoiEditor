@@ -455,9 +455,11 @@ class RoiEditorControlPanel(QMainWindow):
 
 
         Context.gvars["detect_nuclei"]=self.cbDetectNukes.isChecked()
+        Context.gvars["wipe_background"]=self.cbWipeBackground.isChecked()
         Context.gvars["remove_at_edge"]=self.cbEdge.isChecked()
         Context.gvars["remove_small"]=self.cbSmall.isChecked()
         log("Detect nuclei? ", "yes" if Context.gvars["detect_nuclei"] else "no", type="info")
+        log("Wipe background? ", "yes" if Context.gvars["wipe_background"] else "no", type="info")
         log("Remove at edge? ", "yes" if Context.gvars["remove_at_edge"] else "no", type="info")
         log("Remove small? ", "yes" if Context.gvars["remove_small"] else "no", type="info")
         log("Min size in pixels:", Context.gvars["roi_minimum_size"], type="info")
@@ -468,6 +470,8 @@ class RoiEditorControlPanel(QMainWindow):
     def connect_all_handlers(self):
         self.cb_show_names.setChecked(Context.gvars["show_names"])
         self.cb_show_deleted.setChecked(Context.gvars["show_deleted"])
+        self.cbDetectNukes.setChecked(Context.gvars["detect_nuclei"])
+        self.cbWipeBackground.setChecked(Context.gvars["wipe_background"])
         self.cbEdge.setChecked(Context.gvars["remove_at_edge"])
         self.cbSmall.setChecked(Context.gvars["remove_small"])
         #self.cbPixel.setChecked(Context.gvars["force_pixel_as_unit"])
