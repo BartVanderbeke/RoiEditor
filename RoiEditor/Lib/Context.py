@@ -32,6 +32,7 @@ gvars["show_names"]=True        # (do not) show the names of the ROIs on the ima
 gvars["show_deleted"]=True      # (do not) show the deleted ROIs on the image
 gvars["show_overlay"]=True      # (do not) fill the ROIs with color
 gvars["detect_nuclei"]=False      # (do not) detect nuclei when reading ROIs
+gvars["wipe_background"]=False
 
 gvars["save_rois_num_threads"] = 12
 gvars["read_num_threads"] = 2

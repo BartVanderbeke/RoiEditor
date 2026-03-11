@@ -40,7 +40,7 @@
   <widget class="QWidget" name="central_widget">
    <layout class="QVBoxLayout" name="main_layout">
     <property name="spacing">
-     <number>20</number>
+     <number>8</number>
     </property>
     <property name="margin" stdset="0">
      <number>10</number>
@@ -391,7 +391,7 @@
           <number>0</number>
          </property>
          <item>
-          <widget class="QGroupBox" name="gb_process_labels_unit">
+         <widget class="QGroupBox" name="gb_process_labels_unit">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
              <horstretch>0</horstretch>
@@ -401,13 +401,13 @@
            <property name="minimumSize">
             <size>
              <width>150</width>
-             <height>125</height>
+             <height>141</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>150</width>
-             <height>125</height>
+             <height>141</height>
             </size>
            </property>
            <property name="toolTip">
@@ -417,11 +417,11 @@
             <string>Process labels</string>
            </property>
            <layout class="QVBoxLayout" name="paths_checkbox_layout">
-            <property name="sizeConstraint">
-             <enum>QLayout::SetFixedSize</enum>
-            </property>
             <property name="leftMargin">
              <number>5</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
             </property>
             <item>
              <widget class="QCheckBox" name="cbDetectNukes">
@@ -453,6 +453,19 @@
               </property>
               <property name="text">
                <string>Remove small</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QCheckBox" name="cbWipeBackground">
+              <property name="toolTip">
+               <string>When checked, the background will be wiped during label processing</string>
+              </property>
+              <property name="text">
+               <string>Wipe background</string>
+              </property>
+              <property name="checked">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -515,13 +528,13 @@
            <property name="minimumSize">
             <size>
              <width>225</width>
-             <height>125</height>
+             <height>141</height>
             </size>
            </property>
            <property name="maximumSize">
             <size>
              <width>225</width>
-             <height>125</height>
+             <height>141</height>
             </size>
            </property>
            <property name="toolTip">
@@ -541,16 +554,16 @@
             </property>
             <layout class="QGridLayout" name="gridLayout">
              <item row="1" column="0">
-              <widget class="QRadioButton" name="rb_unit_from_file">
+             <widget class="QRadioButton" name="rb_unit_from_file">
                <property name="minimumSize">
                 <size>
-                 <width>77</width>
+                 <width>72</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>77</width>
+                 <width>72</width>
                  <height>20</height>
                 </size>
                </property>
@@ -563,16 +576,16 @@
               </widget>
              </item>
              <item row="1" column="1">
-              <widget class="QLineEdit" name="le_scale_from_file">
+             <widget class="QLineEdit" name="le_scale_from_file">
                <property name="minimumSize">
                 <size>
-                 <width>65</width>
+                 <width>70</width>
                  <height>25</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>65</width>
+                 <width>70</width>
                  <height>25</height>
                 </size>
                </property>
@@ -613,16 +626,16 @@
               </widget>
              </item>
              <item row="2" column="0">
-              <widget class="QRadioButton" name="rb_unit_specified">
+             <widget class="QRadioButton" name="rb_unit_specified">
                <property name="minimumSize">
                 <size>
-                 <width>77</width>
+                 <width>72</width>
                  <height>20</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>77</width>
+                 <width>72</width>
                  <height>20</height>
                 </size>
                </property>
@@ -635,16 +648,16 @@
               </widget>
              </item>
              <item row="2" column="1">
-              <widget class="QLineEdit" name="le_custom_scale">
+             <widget class="QLineEdit" name="le_custom_scale">
                <property name="minimumSize">
                 <size>
-                 <width>65</width>
+                 <width>70</width>
                  <height>25</height>
                 </size>
                </property>
                <property name="maximumSize">
                 <size>
-                 <width>65</width>
+                 <width>70</width>
                  <height>25</height>
                 </size>
                </property>

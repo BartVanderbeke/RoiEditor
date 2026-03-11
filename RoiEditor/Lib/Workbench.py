@@ -54,8 +54,6 @@ from Roi import Roi
 
 from PolygonEditor import PolygonEditor
 
-from AverageColor import distance_array, average_color
-
 from WorkbenchWorker import start_workbench_worker
 
 def get_timestamp_string():
@@ -209,9 +207,6 @@ class Workbench(QWidget):
         img_rgb = np.ascontiguousarray(img_rgb)
         self.images["background"] = img_rgb
         h, w, _ = self.images["background"].shape
-        self.background_qimage = QImage(self.images["background"].data, w, h, 3 * w, QImage.Format.Format_RGB888)
-
-
 
         self.rm["cell"] = TinyRoiManager(prefix="L",parent=self)
         self.rm["nuke"] = TinyRoiManager(prefix="N", parent=self)
@@ -228,26 +223,7 @@ class Workbench(QWidget):
 
         self.measurements=RoiMeasurements(cell_rm=self.rm["cell"],nuke_rm=self.rm["nuke"],unit_and_scale=unit_and_scale,parent=self)
 
-
-        self.roi_window = RoiImageWindow(qimage=self.background_qimage,
-                                     rm=self.rm["cell"] ,nd=self.rm["nuke"],msmts=self.measurements,
-                                     on_any_change=self.on_any_change,
-                                     on_add_nucleus_here=self.on_add_nucleus_here,
-                                     parent=self)
-
-
-        fn = self.files["org"]().name
-        bottom_bar_text_str = f"File: {fn}, {image_size_str}"        
-        self.roi_window.lbl_info.setText(bottom_bar_text_str)
-        self.roi_window.draw_image()
-        self.roi_window.showNormal()
-
-       
-        self.roi_window.installEventFilter(self.interceptor)
-
-
         used_what_cell = self.collect_or_build(what="cell")
-
 
         if not TinyRoiManager.has_rois(self.rm["cell"]) or used_what_cell == "no file read":
             txt = "No valid cell ROIs detected in image or read from file"
@@ -280,8 +256,28 @@ class Workbench(QWidget):
         if w != lbl_w or h != lbl_h:
             log("image dimensions do not match",type="error")
             self.on_fail_to_build(f"image dimensions do not match: {w}x{h} <> {lbl_w}x{lbl_h}")
-            return None 
+            return None
 
+        if gvars["wipe_background"]:
+            log("removing background",type="info")
+            white_mask = np.all(img_rgb == 255, axis=2)
+            img_rgb[white_mask] = 0
+
+
+        self.background_qimage = QImage(self.images["background"].data, w, h, 3 * w, QImage.Format.Format_RGB888)
+        self.roi_window = RoiImageWindow(qimage=self.background_qimage,
+                                     rm=self.rm["cell"] ,nd=self.rm["nuke"],msmts=self.measurements,
+                                     on_any_change=self.on_any_change,
+                                     on_add_nucleus_here=self.on_add_nucleus_here,
+                                     parent=self)
+
+
+        fn = self.files["org"]().name
+        bottom_bar_text_str = f"File: {fn}, {image_size_str}"        
+        self.roi_window.lbl_info.setText(bottom_bar_text_str)
+        self.roi_window.draw_image()
+        self.roi_window.showNormal()
+       
 
 
         self.hist_plot=QHF(parent=self,on_measurement_selected=self.on_measurement_selected)
@@ -301,6 +297,7 @@ class Workbench(QWidget):
         self.backup_timer.start(Context.gvars["backup_interval_timer"]) # msec
 
         log(f"All is in readiness for the commencement of the cleansing ceremony", type="happy")
+        self.roi_window.installEventFilter(self.interceptor)
         self.parentWidget().allowAllEvents()
 
         return self.roi_window

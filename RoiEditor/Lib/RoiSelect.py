@@ -158,18 +158,18 @@ def erase_labels_inplace(label_img: np.ndarray, to_delete):
     # In-place wissen via vectorized membership
     mask = np.isin(label_img, ids, assume_unique=True)
     label_img[mask] = 0
+
     return label_img
 
 def select_outer_rois_vdb5(rm: TinyRoiManager, label_image: np.ndarray):
     if not len(rm):
         log("select_outer_rois_vdb5: No ROIs in ROI Manager",type="warning")
         return
-    deleted_rois = [int(name[1:]) for name, roi in rm if roi.state == Roi.ROI_STATE_DELETED]
+    # step 0: make a label image without the deletde labels
+    deleted_rois = [int(name[1:]) for name, roi in rm.iter_all() if roi.state == Roi.ROI_STATE_DELETED]
     filtered_label_image = label_image.copy()
     erase_labels_inplace(filtered_label_image, deleted_rois)
 
-    # label_image is necessary to avoid that deleted ROIs are considered for identifying the outer edge
-    assert label_image is not None
     # Step 1: binary image of all ROis
     binary_mask = (filtered_label_image > 0).astype(np.uint8) * 255
 
@@ -185,7 +185,7 @@ def select_outer_rois_vdb5(rm: TinyRoiManager, label_image: np.ndarray):
     # Step 4: get the label values for labels intersecting with contour
     # now we only have the contour pixels in outer_mask
     # we need the corresponding pixels in the label image to know what ROI they belong to
-    roi_labels_on_edge = np.unique(label_image[outer_mask > 0])
+    roi_labels_on_edge = np.unique(filtered_label_image[outer_mask > 0])
     roi_labels_on_edge = roi_labels_on_edge[roi_labels_on_edge > 0]  # verwijder achtergrond
 
     # Step 5: convert label idx to actual ROIs
