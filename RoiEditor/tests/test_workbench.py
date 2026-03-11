@@ -16,7 +16,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../L
 
 from Roi import Roi
 from Stylesheet import overall
-from Workbench import Workbench
+from workbench import Workbench
 import Context as Context #import key_to_label_map,gvars
 
 def test_workbench():

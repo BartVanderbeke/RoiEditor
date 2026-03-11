@@ -13,7 +13,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
 from StopWatch import StopWatch
-from Workbench import Workbench
+from workbench import Workbench
 import Context
 
 from RoiSelect import select_outer_rois_vdb5,select_outer_rois_vdb,select_outer_rois_vdb3,select_outer_rois_vdb4

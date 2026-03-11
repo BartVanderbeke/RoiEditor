@@ -28,7 +28,7 @@ from Context import key_to_label_map
 
 from Crumbs import normalize_path
 
-from Workbench import Workbench
+from workbench import Workbench
 from TinyLog import log
 from Exif import retrieve_tiff_image_info
 #from InputValidation import attach_extension_methods
