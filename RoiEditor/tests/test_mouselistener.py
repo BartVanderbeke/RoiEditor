@@ -15,9 +15,9 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from TinyLog import log
-from RectangleSelectorView import RectangleSelectorView
-from MouseListener import ROIClickListener
+from tiny_log import log
+from rectangle_selector_view import RectangleSelectorView
+from mouse_listener import ROIClickListener
 
 class RoiManager:
     ROI_STATE_DELETED = -1

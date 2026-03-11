@@ -14,10 +14,10 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
 
-from Roi import Roi
-from Stylesheet import overall
+from roi import Roi
+from stylesheet import overall
 from workbench import Workbench
-import Context as Context #import key_to_label_map,gvars
+import context as Context #import key_to_label_map,gvars
 
 def test_workbench():
     app = QApplication(sys.argv)

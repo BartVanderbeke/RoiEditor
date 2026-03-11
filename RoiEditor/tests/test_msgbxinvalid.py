@@ -10,8 +10,8 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from MessageBoxInvalidValues import MessageBoxInvalidValues
-from Stylesheet import overall
+from message_box_invalid_values import MessageBoxInvalidValues
+from stylesheet import overall
 
 def test_msgbxinvalid():
     auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")

@@ -1,2 +1,2 @@
-from .Workbench import Workbench
+from .workbench import Workbench
 

@@ -15,14 +15,14 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
 from nptyping import NDArray, Shape, Float64
-import Context
-from TinyRoiFile import TinyRoiFile
-from StopWatch import StopWatch
-from TinyRoiManager import TinyRoiManager
-from RoiMeasurements import RoiMeasurements
-from MsmtToFile import save_measurements_to_csv
-from TinyLog import log
-from Roi import Roi
+import context as Context
+from tiny_roi_file import TinyRoiFile
+from stop_watch import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from roi_measurements import RoiMeasurements
+from msmt_to_file import save_measurements_to_csv
+from tiny_log import log
+from roi import Roi
 
 states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
 

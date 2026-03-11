@@ -5,9 +5,9 @@ import cv2
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from Feret import feret_msmts,get_values,get_values2
-from StopWatch import StopWatch
-from TinyRoiFile import TinyRoiFile
+from feret import feret_msmts,get_values,get_values2
+from stop_watch import StopWatch
+from tiny_roi_file import TinyRoiFile
 
 def test_feret():
     base_path = os.path.dirname(__file__)

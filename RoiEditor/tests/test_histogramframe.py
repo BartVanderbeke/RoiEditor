@@ -11,15 +11,15 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../L
 from nptyping import NDArray, Shape, Float64
 from PyQt6.QtWidgets import QApplication,QWidget
 from PyQt6.QtCore import QTimer
-from Exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info
+from exif import read_ome_metadata,dict_to_pretty_json,retrieve_image_info
 
-from RoiMeasurements import RoiMeasurements
-from TinyRoiFile import TinyRoiFile
-from StopWatch import StopWatch
-from TinyRoiManager import TinyRoiManager
-from Roi import Roi
+from roi_measurements import RoiMeasurements
+from tiny_roi_file import TinyRoiFile
+from stop_watch import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from roi import Roi
 
-from HistogramFrame import HistogramFrame
+from histogram_frame import HistogramFrame
 
 def test_hist():
     app = QApplication(sys.argv)

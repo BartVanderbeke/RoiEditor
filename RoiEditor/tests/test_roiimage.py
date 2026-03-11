@@ -14,15 +14,15 @@ if hasattr(sys.stderr, "reconfigure"):
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
 
-from Context import gvars
-from TinyRoiFile import TinyRoiFile
-from StopWatch import StopWatch
-from TinyRoiManager import TinyRoiManager
-from RoiMeasurements import RoiMeasurements
-from RoiImage import RoiImageWindow
-from Stylesheet import overall
-from TinyLog import log
-from Roi import Roi
+from context import gvars
+from tiny_roi_file import TinyRoiFile
+from stop_watch import StopWatch
+from tiny_roi_manager import TinyRoiManager
+from roi_measurements import RoiMeasurements
+from roi_image import RoiImageWindow
+from stylesheet import overall
+from tiny_log import log
+from roi import Roi
 
 def test_roiimage():
     auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
