@@ -1,106 +1,31 @@
-
-import os
-import sys
-import numpy as np
 import cv2
-from skimage.io import imread
-
-import matplotlib.pyplot as plt
-import math
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
-
-from tiny_roi_manager import TinyRoiManager
 from label_to_roi_diff import process_label_image
-from stop_watch import StopWatch
 from roi import Roi
+from tiny_roi_manager import TinyRoiManager
+
+from RoiEditor.tests._helpers import compare_text, data_path, fail
 
 
-def show_contours(contours):
-    n = len(contours)
-    cols = math.ceil(math.sqrt(n))
-    rows = math.ceil(n / cols)
-    fig, axes = plt.subplots(rows, cols, figsize=(3 * cols, 3 * rows))
-    axes = np.array(axes).reshape(-1) 
-    i=0
-    for i, cnt in enumerate(contours):
-        cnt = cnt.squeeze()
-        ax = axes[i]
-        if cnt.ndim == 2 and cnt.shape[0] >= 3:
-            ax.plot(cnt[:, 0], cnt[:, 1], color=np.random.rand(3,), linewidth=2)
-        ax.set_aspect('equal')
-        ax.set_title(f"Contour {i+1}")
-        ax.axis('on')
+EXPECTED = """L158     |  31 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L159     |  32 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L160     |  52 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L158     |  31 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L159     |  32 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L160     |  52 punten | state: ROI_STATE_DELETED | tags: ['DELETED.edge.image']
+L326     |  45 punten | state: ROI_STATE_ACTIVE | tags: []
+L327     |  80 punten | state: ROI_STATE_ACTIVE | tags: []
+L328     |  48 punten | state: ROI_STATE_ACTIVE | tags: []"""
 
-    for j in range(i + 1, len(axes)):
-        fig.delaxes(axes[j])
-
-    plt.tight_layout()
-    plt.show()
-
-def show_contours2(contours):
-    fig, ax = plt.subplots(1, 1)
-    ax.set_aspect('equal')
-    ax.set_title(f"Contours")
-    ax.axis('on')
-
-    for cnt in contours:
-        cnt = cnt.squeeze()
-        if cnt.ndim == 2 and cnt.shape[0] >= 3:
-            ax.plot(cnt[:, 0], cnt[:, 1], color=np.random.rand(3,), linewidth=1)
-
-    plt.tight_layout()
-    plt.show()
 
 def test_labeltoroidiff():
-    base_path = os.path.dirname(__file__)
-    test_path = os.path.join(base_path, "TestData")+'/'
-
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    rm = TinyRoiManager()
-    label_image_path = test_path+"A_stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    print(np.unique(label_image))
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-    for name,roi in rm.iter_all():
-        if roi:
-            print(roi.name,(int(roi.center[0]),int(roi.center[1])),label_image[int(roi.center[1]), int(roi.center[0])])
-
-
-
-    label_image_path = test_path+"A_stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-
-    for name, roi in last_3:
-        print(f"{name:8s} | {roi.n:3d} punten | state: {Roi.state_to_str(roi.state)} | tags: {roi.tags}")
-
-    label_image_path = test_path+"C_stitch_cp_masks.png"
-    label_image = cv2.imread(label_image_path,cv2.IMREAD_UNCHANGED)
-    StopWatch.start("Detection starting")
-    process_label_image(rm, label_image)
-    StopWatch.stop("Detection")
-
-    rois = list(rm.iter_all())
-    last_3= rois[-3:]
-
-    for name, roi in last_3:
-        print(f"{name:8s} | {roi.n:3d} punten | state: {Roi.state_to_str(roi.state)} | tags: {roi.tags}")
-
-
-if __name__ == "__main__":
-    test_labeltoroidiff()
+    try:
+        manager = TinyRoiManager()
+        lines = []
+        for image_name in ("A_stitch_cp_masks.png", "A_stitch_cp_masks.png", "C_stitch_cp_masks.png"):
+            label_image = cv2.imread(str(data_path(image_name)), cv2.IMREAD_UNCHANGED)
+            process_label_image(manager, label_image)
+            for name, roi in list(manager.iter_all())[-3:]:
+                lines.append(f"{name:8s} | {roi.n:3d} punten | state: {Roi.state_to_str(roi.state)} | tags: {sorted(roi.tags)}")
+        compare_text("\n".join(lines), EXPECTED, "label_to_roi_diff")
+    except Exception as exc:
+        fail(f"{type(exc).__name__}: {exc}")

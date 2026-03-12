@@ -1,55 +1,33 @@
-import os
-import sys
-from PyQt6.QtWidgets import QApplication,QWidget
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-if hasattr(sys.stderr, "reconfigure"):
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+from PyQt6.QtWidgets import QFileDialog, QWidget
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
-
+from file_choosers import QLabelFileChooser, QOriginalFileChooser, QRoiFileChooser
 from stylesheet import overall
-from file_choosers import QOriginalFileChooser,QLabelFileChooser,QRoiFileChooser
 
-def test_choosers():
-    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
-   
-
-    w = QWidget()
-    w.setStyleSheet(overall)
+from RoiEditor.tests._helpers import data_path, fail
 
 
-    if auto_close_ms > 0:
-        base_path = os.path.dirname(__file__)
-        test_path = os.path.join(base_path, "TestData")
-        selected = os.path.join(test_path, "6.tif")
-        hint = test_path
-        print("--- QOriginalFileChooser ---")
-        print("Selected, hint:", selected, hint)
-        print("--- QLabelFileChooser ---")
-        print("Selected:", os.path.join(test_path, "6_cp_masks.png"))
-        print("--- QRoiFileChooser ---")
-        print("Selected:", os.path.join(test_path, "6_rois.zip"))
-    else:
-        print("--- QOriginalFileChooser ---")
-        original_chooser = QOriginalFileChooser(parent = w)
-        selected, hint = original_chooser.showDialog()
-        print("Selected, hint:", selected,hint)
+def test_choosers(qapp):
+    parent = QWidget()
+    parent.setStyleSheet(overall)
 
-        print("--- QLabelFileChooser ---")
-        label_chooser = QLabelFileChooser(hint=hint,parent=w)
-        print("Selected:", label_chooser.showDialog(hint))
+    original_chooser = QOriginalFileChooser(parent=parent)
+    original_selection = [str(data_path("A_stitch.tiff")), str(data_path("C_stitch.tiff"))]
+    original_chooser.dialog.showDialog = lambda: QFileDialog.DialogCode.Accepted
+    original_chooser.dialog.selectedFiles = lambda: original_selection
+    selected, hint = original_chooser.showDialog()
+    if selected != original_selection[0] or hint != original_selection[1]:
+        fail("QOriginalFileChooser did not return the mocked selection")
 
-        print("--- QRoiFileChooser ---")
-        roi_chooser = QRoiFileChooser(parent=w)
-        print("Selected:", roi_chooser.showDialog())
+    label_chooser = QLabelFileChooser(hint=hint, parent=parent)
+    label_selection = [str(data_path("A_stitch_cp_masks.png"))]
+    label_chooser.dialog.showDialog = lambda: QFileDialog.DialogCode.Accepted
+    label_chooser.dialog.selectedFiles = lambda: label_selection
+    if label_chooser.showDialog(hint) != label_selection[0]:
+        fail("QLabelFileChooser did not return the mocked selection")
 
-
-    #sys.exit(app.exec())
-
-if __name__ == "__main__":
-    test_choosers()
-    sys.exit()
+    roi_chooser = QRoiFileChooser(parent=parent)
+    roi_selection = [str(data_path("A_stitch_roiset.zip"))]
+    roi_chooser.dialog.showDialog = lambda: QFileDialog.DialogCode.Accepted
+    roi_chooser.dialog.selectedFiles = lambda: roi_selection
+    if roi_chooser.showDialog() != roi_selection[0]:
+        fail("QRoiFileChooser did not return the mocked selection")

@@ -35,3 +35,6 @@ exclude = ["data", "TestData"]
 
 [tool.setuptools.package-data]
 "RoiEditor.Lib" = ["*.ui"]
+
+[tool.pytest.ini_options]
+pythonpath = [".", "RoiEditor/Lib"]

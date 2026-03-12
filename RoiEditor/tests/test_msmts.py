@@ -1,195 +1,48 @@
-import os
-import sys
 import numpy as np
-import cv2
-import random
-if hasattr(sys.stdout, "reconfigure"):
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-if hasattr(sys.stderr, "reconfigure"):
-    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-from PyQt6.QtWidgets import QApplication
-import matplotlib.pyplot as plt
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
-
-from nptyping import NDArray, Shape, Float64
-import context as Context
-from tiny_roi_file import TinyRoiFile
-from stop_watch import StopWatch
-from tiny_roi_manager import TinyRoiManager
-from roi_measurements import RoiMeasurements
-from msmt_to_file import save_measurements_to_csv
-from tiny_log import log
 from roi import Roi
+from roi_measurements import RoiMeasurements
 
-states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
+from RoiEditor.tests._helpers import compare_text, fail, load_manager
+
+
+EXPECTED = """ALL 160 1441.531 1163.500 540.500
+DELETED 53 1580.660 1282.500 629.500
+ACTIVE 54 1399.639 1236.250 548.500
+BIG 30 3131.233 2599.750 459.750
+SELECTED 53 60.024 58.735 13.735"""
+
 
 def test_msmts():
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(True)
+    try:
+        manager, _ = load_manager("A_stitch")
+        states = [Roi.ROI_STATE_ACTIVE, Roi.ROI_STATE_DELETED, Roi.ROI_STATE_SELECTED]
+        for index, (_, roi) in enumerate(manager.iter_all()):
+            roi.color = np.array([0.0, 0.0, 0.0])
+            roi.state = states[index % len(states)]
 
-    base_path = os.path.dirname(__file__)
-    test_path = os.path.join(base_path, "TestData")+'/'
+        msmts = RoiMeasurements(manager)
+        msmts.compute_stats_subset("ALL")
+        msmts.define_subset("DELETED", lambda roi: roi.state == Roi.ROI_STATE_DELETED if roi else False)
+        msmts.compute_stats_subset("DELETED")
+        msmts.define_subset("ACTIVE", lambda roi: roi.state == Roi.ROI_STATE_ACTIVE if roi else False)
+        msmts.compute_stats_subset("ACTIVE")
+        msmts.define_subset("BIG", lambda roi: roi.area > 2000 if roi else False)
+        msmts.compute_stats_subset("BIG")
+        msmts.define_subset("SELECTED", lambda roi: roi.state == Roi.ROI_STATE_SELECTED if roi else False)
+        msmts.compute_stats_subset("SELECTED")
 
+        lines = []
+        for subset_name, measurement_name in (
+            ("ALL", "Area"),
+            ("DELETED", "Area"),
+            ("ACTIVE", "Area"),
+            ("BIG", "Area"),
+            ("SELECTED", "Feret"),
+        ):
+            stats = msmts.stats[subset_name][measurement_name]
+            lines.append(f"{subset_name} {stats['N']} {stats['mean']:.3f} {stats['median']:.3f} {stats['mad']:.3f}")
 
-
-    auto_close_ms = int(os.getenv("ROI_TEST_AUTOCLOSE_MS", "0") or "0")
-    def maybe_show(block: bool):
-        if auto_close_ms <= 0:
-            plt.show(block=block)
-
-
-    #base_name = ".\TestData\A_stitch_RoiSet"
-    base_name = test_path+"6"
-    zip_path = base_name + "_rois.zip"
-    csv_path = base_name + ".csv"
-    label_path = base_name+"_cp_masks.png"
-    label_image: np.ndarray= cv2.imread(label_path, cv2.IMREAD_UNCHANGED)
-    num_threads = 12
-
-    rm = TinyRoiManager()
-    StopWatch.start("starting roi read")
-    rois = TinyRoiFile.read(zip_path, label_image)
-    StopWatch.stop("roi read")
-    for roi in rois:
-        if roi:
-            rm.add_unchecked(roi)
-            roi.color: NDArray[Shape["1, 3"], Float64] = np.array([0.0, 0.0, 0.0])
-            roi.state= random.choice(states)
-
-    if auto_close_ms <= 0:
-        StopWatch.start("Feret")
-        rm.force_feret()
-        StopWatch.stop("Feret")
-    
-    StopWatch.start("msmts all")
-    msmts = RoiMeasurements(rm)
-    StopWatch.stop("msmts all")
-
-    subset_name="ALL"
-    msmts.compute_stats_subset(subset_name)
-    csv_path = base_name + "_"+subset_name+".csv"
-    msmts.save_measurements_to_csv(full_name=csv_path, subset_name=subset_name)
-
-    
-    stats_all = msmts.stats["ALL"]
-    area_hist = stats_all["Area"]
-    plt.figure()
-    plt.hist(msmts.data["ALL"]["Area"], bins=area_hist["bin_edges"])
-    plt.title("Histogram of Area - ALL")
-    plt.xlabel("Area")
-    plt.ylabel("Count")
-    plt.grid(True)
-    maybe_show(block=False)
-
-    stats_all_area = msmts.stats["ALL"]["Area"]
-    print("\nALL - Area stats")
-    print(" ".join([k.rjust(8) for k in stats_all_area.keys() if k not in ["hist", "bin_edges","outliers"]]))
-    print(" ".join([f"{v:.3f}".rjust(8) for k, v in stats_all_area.items() if k not in ["hist", "bin_edges","outliers"] and k !='unit']))
-
-
-    subset_name="DELETED"
-    StopWatch.start(f"msmts: {subset_name}")
-    deleted_filter = lambda roi: (roi.state==Roi.ROI_STATE_DELETED) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=deleted_filter)
-    msmts.compute_stats_subset("DELETED")
-    StopWatch.stop(f"msmts: {subset_name}")
-    if "DELETED" in msmts.stats:
-        csv_path = base_name + "_"+subset_name+".csv"
-        msmts.save_measurements_to_csv(full_name=csv_path, subset_name=subset_name)
-
-
-        stats_del = msmts.stats["DELETED"]["Area"]
-        print("\nDELETED - Area stats")
-        print(" ".join([k.rjust(8) for k in stats_del.keys() if k not in ["hist", "bin_edges","outliers"]]))
-        print(" ".join([f"{v:.3f}".rjust(8) for k, v in stats_del.items() if k not in ["hist", "bin_edges","outliers"] and k !='unit']))
-
-        plt.figure()
-        plt.hist(msmts.data["DELETED"]["Area"], bins=stats_del["bin_edges"])
-        plt.title("Histogram of Area - DELETED")
-        plt.xlabel("Area")
-        plt.ylabel("Count")
-        plt.grid(True)
-        maybe_show(block=False)
-    else:
-        print("----No DELETED rois found----")
-
-
-    subset_name="ACTIVE"
-    StopWatch.start(f"msmts: {subset_name}")
-    active_filter = lambda roi: (roi.state==Roi.ROI_STATE_ACTIVE) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=active_filter)
-    msmts.compute_stats_subset(subset_name)
-    StopWatch.stop(f"msmts: {subset_name}")
-    csv_path = base_name + "_"+subset_name+".csv"
-    msmts.save_measurements_to_csv(full_name=csv_path, subset_name=subset_name)
-
-    stats_del = msmts.stats[subset_name]["Area"]
-    print(f"\n{subset_name} - Area stats")
-    print(" ".join([k.rjust(8) for k in stats_del.keys() if k not in ["hist", "bin_edges","outliers"]]))
-    print(" ".join([f"{v:.3f}".rjust(8) for k, v in stats_del.items() if k not in ["hist", "bin_edges","outliers"] and k !='unit']))
-
-    plt.figure()
-    plt.hist(msmts.data[subset_name]["Area"], bins=stats_del["bin_edges"])
-    plt.title(f"Histogram of Area - {subset_name}")
-    plt.xlabel("Area")
-    plt.ylabel("Count")
-    plt.grid(True)
-    maybe_show(block=False)
-
-
-    subset_name="BIG"
-    StopWatch.start(f"msmts: {subset_name}")
-    big_filter = lambda roi: (roi.area > 2000) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=big_filter)
-    msmts.compute_stats_subset(subset_name)
-    StopWatch.stop(f"msmts: {subset_name}")
-    csv_path = base_name + "_"+subset_name+".csv"
-    msmts.save_measurements_to_csv(full_name=csv_path, subset_name=subset_name)
-
-    stats_del = msmts.stats[subset_name]["Area"]
-    print("\nBIG - Area stats")
-    print(" ".join([k.rjust(8) for k in stats_del.keys() if k not in ["hist", "bin_edges","outliers"]]))
-    print(" ".join([f"{v:.3f}".rjust(8) for k, v in stats_del.items() if k not in ["hist", "bin_edges","outliers"] and k !='unit']))
-
-    plt.figure()
-    plt.hist(msmts.data[subset_name]["Area"], bins=stats_del["bin_edges"])
-    plt.title(f"Histogram of Area - {subset_name}")
-    plt.xlabel("Area")
-    plt.ylabel("Count")
-    plt.grid(True)
-    maybe_show(block=False)
-
-
-    subset_name="SELECTED"
-    StopWatch.start(f"msmts: {subset_name}")
-    filter = lambda roi: (roi.state == Roi.ROI_STATE_SELECTED) if roi else False
-    msmts.define_subset(subset_name=subset_name, filter=filter)
-    msmts.compute_stats_subset(subset_name)
-    StopWatch.stop(f"msmts: {subset_name}")
-    if subset_name  in msmts.stats:
-        csv_path = base_name + "_"+subset_name+".csv"
-        msmts.save_measurements_to_csv(full_name=csv_path, subset_name=subset_name)
-
-        stats_del = msmts.stats[subset_name]["Feret"]
-        print("\nSELECTED - Area stats")
-        print(" ".join([k.rjust(8) for k in stats_del.keys() if k not in ["hist", "bin_edges","outliers"]]))
-        print(" ".join([f"{v:.3f}".rjust(8) for k, v in stats_del.items() if k not in ["hist", "bin_edges","outliers"] and k !='unit']))
-
-        plt.figure()
-        plt.hist(msmts.data[subset_name]["Area"], bins=stats_del["bin_edges"])
-        plt.title(f"Histogram of Area - {subset_name}")
-        plt.xlabel("Area")
-        plt.ylabel("Count")
-        plt.grid(True)
-        maybe_show(block=False)
-    else:
-        print("----No SELECTED rois found----")
-    if auto_close_ms > 0:
-        plt.close("all")
-    else:
-        maybe_show(block=True)
-if __name__ == "__main__":
-        test_msmts()
+        compare_text("\n".join(lines), EXPECTED, "Measurement summary")
+    except Exception as exc:
+        fail(f"{type(exc).__name__}: {exc}")
