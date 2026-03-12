@@ -1,60 +1,29 @@
-import os
-import sys
-import numpy as np
-import cv2
-
-
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
-
+from roi import Roi
 from tiny_roi_file import TinyRoiFile
-from StopWatch  import stop_watch
-from Roi  import roi
 
-def  test_tinyroifile():
+from RoiEditor.tests._helpers import compare_text, data_path, fail, load_label, wait_for_zip
 
 
-    num_threads = 1
-    num_threads_write = 4
-
-    def loop(base_name):
-        global rois
-        base_path = os.path.dirname(__file__)
-        test_path = os.path.join(base_path, "TestData")+'/'
-        zip_path = test_path+base_name+"_rois.zip"
-        label_file = test_path+base_name+"_cp_masks.png"
-        label_image: np.ndarray= cv2.imread(label_file, cv2.IMREAD_UNCHANGED)
-        print(np.unique(label_image))
-        StopWatch.start("reading original")
-        rois = TinyRoiFile.read(zip_path, label_image)
-        StopWatch.stop(f"num of rois read {len(rois)}")
-        StopWatch.start("writing back")
-        zip_path=base_name+"_OUT.zip"
-        TinyRoiFile.write_parallel(zip_path, roi_list=rois, num_threads=num_threads_write)
-        StopWatch.stop(f"num of rois written {len(rois)}")
-        StopWatch.start("reading copy")
-        rois = TinyRoiFile.read(zip_path,label_image)
-        StopWatch.stop(f"num of rois read {len(rois)}")
-        print("********* End of Loop")
-        print("")
-
-    StopWatch.start("")
-    StopWatch.stop("dummy")
-    StopWatch.start("")
-    StopWatch.stop("dummy")
+EXPECTED = """L326: 104 points, bounds=(997, 179, 1027, 221), state=ROI_STATE_ACTIVE
+L327: 130 points, bounds=(1004, 219, 1040, 277), state=ROI_STATE_ACTIVE
+L328: 104 points, bounds=(1005, 274, 1033, 317), state=ROI_STATE_ACTIVE"""
 
 
-    # base_name = "A_Stitch"
-    # loop(base_name)
-    base_name = "A_Stitch"
-    loop(base_name)
-    base_name = "C_stitch"
-    loop(base_name)
-
-    last_3 = rois[-3:]
-    for roi in last_3:
-        if roi:
-            print(f"{roi.name}: {roi.n} points, bounds={roi.bounds}, state={Roi.state_to_str(roi.state)}")
-
-if __name__ == "__main__":
-    test_tinyroifile()
+def test_tinyroifile(tmp_path):
+    try:
+        rois = None
+        for stem in ("A_stitch", "C_stitch"):
+            label = load_label(stem)
+            zip_name = "A_stitch_roiset.zip" if stem == "A_stitch" else "C_stitch_rois.zip"
+            rois = TinyRoiFile.read(str(data_path(zip_name)), label)
+            out_path = tmp_path / f"{stem}_OUT.zip"
+            TinyRoiFile.write_parallel(str(out_path), roi_list=rois, num_threads=4)
+            wait_for_zip(out_path)
+            rois = TinyRoiFile.read(str(out_path), label)
+        lines = []
+        for roi in rois[-3:]:
+            if roi:
+                lines.append(f"{roi.name}: {roi.n} points, bounds={roi.bounds}, state={Roi.state_to_str(roi.state)}")
+        compare_text("\n".join(lines), EXPECTED, "TinyRoiFile roundtrip")
+    except Exception as exc:
+        fail(f"{type(exc).__name__}: {exc}")

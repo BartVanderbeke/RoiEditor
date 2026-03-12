@@ -1,37 +1,26 @@
-import os
-import sys
 import numpy as np
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../Lib')))
-
-from tiny_roi_manager import TinyRoiManager
 from numpy_to_roi import process_label_image
-from StopWatch  import stop_watch
+from tiny_roi_manager import TinyRoiManager
 
-def  test_numpytoroi():
-    base_path = os.path.dirname(__file__)
-    test_path = os.path.join(base_path, "TestData")+'/'
-    npy_path = test_path+'A_stitch_seg.npy'
-
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-    StopWatch.start("dummy")
-    StopWatch.stop("dummy")
-
-    rm=TinyRoiManager()
-
-    data = np.load(npy_path, allow_pickle=True).item()
-    StopWatch.start("starting numpy read")
-    process_label_image(rm, data, remove_edges=True, remove_small=True, size_threshold= 100)
-    StopWatch.stop("numpy read")
-    rois = np.array(list(rm.iter_all()))
-    print(f"num_of_rois read: {len(rois)}")
-    last_3 = rois[-3:]
-    for _, roi in last_3:
-        if roi:
-            print(f"{roi.name}: {roi.n} points, bounds={roi.bounds}")
+from RoiEditor.tests._helpers import compare_text, data_path, fail
 
 
-if __name__ == "__main__":
-    test_numpytoroi()
+EXPECTED = """num_of_rois read: 159
+L158: 25 points, bounds=(887, 14, 915, 50)
+L159: 21 points, bounds=(889, 194, 915, 251)
+L160: 35 points, bounds=(897, 114, 915, 171)"""
+
+
+def test_numpytoroi():
+    try:
+        manager = TinyRoiManager()
+        data = np.load(data_path("A_stitch_seg.npy"), allow_pickle=True).item()
+        process_label_image(manager, data, remove_edges=True, remove_small=True, size_threshold=100)
+        rois = np.array(list(manager.iter_all()), dtype=object)
+        lines = [f"num_of_rois read: {len(rois)}"]
+        for _, roi in rois[-3:]:
+            lines.append(f"{roi.name}: {roi.n} points, bounds={roi.bounds}")
+        compare_text("\n".join(lines), EXPECTED, "numpy_to_roi")
+    except Exception as exc:
+        fail(f"{type(exc).__name__}: {exc}")
