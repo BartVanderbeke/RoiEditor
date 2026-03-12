@@ -12,33 +12,6 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 from numba import njit
 
-
-# def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
-#     """
-#     Calculate the average RGB color for each label in the label image.
-#     """
-#     if image_rgb.ndim != 3 or image_rgb.shape[2] != 3:
-#         raise ValueError("Input image must be an RGB image with shape (H, W, 3).")
-#     if label_image.ndim != 2 or label_image.shape != image_rgb.shape[:2]:
-#         raise ValueError("Labels must be a 2D array with the same height and width as the image.")
-
-#     num_labels = np.unique(label_image).max() + 1  # Assuming labels are 0-indexed
-#     image_float = image_rgb.astype(np.float32) / 255.0
-
-#     flat_labels = label_image.ravel()
-#     flat_rgb = image_float.reshape(-1, 3)
-
-#     means = np.zeros((num_labels, 3), dtype=np.float32)
-
-#     for lbl in range(num_labels):
-#         mask = flat_labels == lbl
-#         if not mask.any():
-#             means[lbl] = np.array([[0.0, 0.0, 0.0]])
-#             continue
-#         means[lbl] = flat_rgb[mask].mean(axis=0)
-
-#     return means
-
 @njit(cache=True)
 def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
     max_label = int(np.max(label_image))
@@ -74,9 +47,6 @@ def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
     if label_image.ndim != 2 or label_image.shape != image_rgb.shape[:2]:
         raise ValueError("label_image must be (H, W) matching the image")
     return _average_color_jit(image_rgb, label_image)
-
-
-
 
 def global_average_rgb(avg_colors: np.ndarray) -> np.ndarray:
     """

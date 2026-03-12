@@ -17,6 +17,8 @@ from roi import Roi
 from tiny_roi_manager import TinyRoiManager
 from tiny_log import log
 
+from numba import njit
+
 state_and_tags = {0: (Roi.ROI_STATE_ACTIVE,set()),
         1: (Roi.ROI_STATE_DELETED, set(["DELETED.edge.image"])),
         2: (Roi.ROI_STATE_DELETED,set(["DELETED.small"])),
@@ -95,7 +97,7 @@ def process_label_image(rm: TinyRoiManager, label_image: np.ndarray, remove_edge
     
     manager.add_from_list_unchecked(roi_array)
 
-
+@njit(cache=True)
 def get_edge_labels(label_image: np.ndarray) -> np.ndarray:
 
   top = label_image[0, :]

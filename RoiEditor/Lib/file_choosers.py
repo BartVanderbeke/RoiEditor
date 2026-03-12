@@ -43,7 +43,6 @@ def find_related_filenames(reference_filepath: str) -> dict[str, str | None]:
                 break
     return files
 
-
 class QOriginalFileChooser:
     # if >2 files are selected the 2 shortest names are kept
     # after trimming to 2 names, the shortest one is chosen for the background image file
@@ -68,10 +67,12 @@ class QOriginalFileChooser:
                 return selected_files[0], hint
 
         return None, None
+
     def setParent(self, parent):
         self.dialog.setParent(parent)
-    def setWindowFlag(self,flag):
-        self.dialog.setWindowFlag(flag)    
+
+    def setWindowFlag(self, flag):
+        self.dialog.setWindowFlag(flag)
 
 class QLabelFileChooser:
     def __init__(self, x=100, y=40,hint=None, parent=None):
@@ -97,13 +98,13 @@ class QLabelFileChooser:
                 return selected_file
 
         return None
+
     def setParent(self, parent):
         self.dialog.setParent(parent)
-    def setWindowFlag(self,flag):
-        self.dialog.setWindowFlag(flag) 
 
+    def setWindowFlag(self, flag):
+        self.dialog.setWindowFlag(flag)
 
-import os
 from PyQt6.QtWidgets import QFileDialog
 
 
@@ -126,8 +127,9 @@ class QRoiFileChooser:
                 return selected_file
 
         return None
-    
+
     def setParent(self, parent):
         self.dialog.setParent(parent)
-    def setWindowFlag(self,flag):
-        self.dialog.setWindowFlag(flag) 
+
+    def setWindowFlag(self, flag):
+        self.dialog.setWindowFlag(flag)
