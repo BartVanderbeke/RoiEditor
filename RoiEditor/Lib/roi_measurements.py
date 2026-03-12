@@ -11,6 +11,7 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import numpy as np
 from typing import Callable,Any
+from numba import njit
 
 from roi import Roi
 from tiny_roi_manager import TinyRoiManager
@@ -27,6 +28,37 @@ class IqrMargin:
         margin["Color"] = 3.0
 
 from PyQt6.QtCore import QObject
+
+@njit(cache=True, inline="always")
+def _custom_median(sorted_values, start, end):
+    count = end - start
+    mid = start + count // 2 if count>0 else 0
+    if count % 2 == 1:
+        return sorted_values[mid]
+    else:
+        mid_minus_1 = mid-1 if mid > 0 else 0
+        return 0.5 * (sorted_values[mid_minus_1] + sorted_values[mid])
+
+
+@njit(cache=True)
+def _compute_stats_core(values, iqr_margin):
+    sorted_vals = np.sort(values)
+    n = len(values)
+    med = _custom_median(sorted_vals, 0, n)
+    q1 = _custom_median(sorted_vals, 0, n // 2)
+    q3 = _custom_median(sorted_vals, (n + 1) // 2, n)
+    mad = _custom_median(np.sort(np.abs(values - med)), 0, n)
+    min_val = np.min(values)
+    max_val = np.max(values)
+    iqr = q3 - q1
+    upper_limit = q3 + iqr_margin * iqr
+    lower_limit = q1 - iqr_margin * iqr
+    outlier_mask = (values < lower_limit) | (values > upper_limit)
+    num_outliers = np.sum(outlier_mask)
+    mean = np.mean(values)
+    return n, med, q1, q3, mad, min_val, max_val, iqr, upper_limit, lower_limit, outlier_mask, num_outliers, mean
+
+
 class RoiMeasurements(QObject):
     """
         calculates the measurement values, calculates statistics
@@ -79,14 +111,6 @@ class RoiMeasurements(QObject):
     def is_valid(cls,msmts: "RoiMeasurements"):
         return msmts is not None and msmts.data is not None and msmts.stats is not None
 
-    def _custom_median(self, sorted_values, start, end):
-        count = end - start
-        mid = start + count // 2 if count>0 else 0
-        if count % 2 == 1:
-            return sorted_values[mid]
-        else:
-            mid_minus_1 = mid-1 if mid > 0 else 0
-            return 0.5 * (sorted_values[mid_minus_1] + sorted_values[mid])
 
     def _compute_stats(self, subset_name):
         if not subset_name in self.stats:
@@ -95,41 +119,39 @@ class RoiMeasurements(QObject):
         filtered = self.data[subset_name].copy()
         filtered.pop("Roi", None)
         #self.stats[subset_name]["Roi"] = dict()
+        to_remove = [k for k, v in filtered.items() if len(v)==0]
+        for msmt in to_remove:
+            result= {
+                "mean": 0,
+                "stdev": 0,
+                "median": 0,
+                "q1": 0,
+                "q3": 0,
+                "iqr": 0,
+                "mad": 0,
+                "N": 0,
+                "min": 0,
+                "max": 0,
+                "hist": list() ,
+                "bin_edges": list(),
+                "num_outliers": 0,
+                "outliers": np.array([], dtype=Roi),
+                "unit" : self.units_and_scalers[msmt]["unit"]
+            }
+            self.stats[subset_name][msmt] = result
+            filtered.pop(msmt)
+
         for msmt, values in filtered.items():
-            if len(values)>0:
-                sorted_vals = np.sort(values)
-                N = len(values)
-                med = self._custom_median(sorted_vals, 0, N)
-                q1 = self._custom_median(sorted_vals, 0, N // 2)
-                q3 = self._custom_median(sorted_vals, (N + 1) // 2, N)
-                mad = self._custom_median(np.sort(np.abs(values - med)), 0, N)
-                hist, bin_edges = np.histogram(a=values, bins=self.num_bins,range=self.minmax["ALL"][msmt])
-                min_val = np.min(values)
-                max_val = np.max(values)
-                iqr =  q3 - q1
-                upper_limit = q3 + IqrMargin.margin[msmt] * iqr
-                lower_limit = q1 - IqrMargin.margin[msmt] * iqr
-                outlier_mask = (values < lower_limit) | (values > upper_limit)
-                outliers = rois[outlier_mask]
-                num_outliers=len(outliers)
-                mean = np.mean(values)
-                stdev = np.std(values, ddof=1) if N>1 else 0
-                unit=self.units_and_scalers[msmt]["unit"]
-            else:
-                N = 0
-                med = 0
-                q1 = 0
-                q3 = 0
-                mad = 0
-                iqr =  q3 - q1
-                hist, bin_edges = list(), list()
-                min_val = 0
-                max_val = 0
-                num_outliers = 0
-                outliers = np.array([], dtype=Roi)
-                mean = 0
-                stdev = 0
-                unit= self.units_and_scalers[msmt]["unit"]
+            # dit naar njit
+            N, med, q1, q3, mad, min_val, max_val, iqr, upper_limit, lower_limit, outlier_mask, num_outliers, mean = _compute_stats_core(
+                values,
+                IqrMargin.margin[msmt],
+            )
+            # einde njit
+            outliers = rois[outlier_mask]
+            stdev = np.std(values, ddof=1) if N>1 else 0
+            hist, bin_edges = np.histogram(a=values, bins=self.num_bins,range=self.minmax["ALL"][msmt])            
+            unit=self.units_and_scalers[msmt]["unit"]
             result= {
                 "mean": mean,
                 "stdev": stdev,
