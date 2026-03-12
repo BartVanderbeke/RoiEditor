@@ -90,10 +90,6 @@ class TinyRoiManager(QObject):
         first_free = int(max_key_str[1:]) + 1
         name = self.idx_to_name(first_free)
         return name
-    
-    def as_array(self):
-        arr:  NDArray[Any]=np.ndarray(self._name_to_roi.values())
-        return arr
 
     def add_from_list_unchecked(self,rois):
         self._name_to_roi ={roi.name: roi for roi in rois if roi}
@@ -242,21 +238,6 @@ class TinyRoiManager(QObject):
         roi = self._name_to_roi.get(name)
         return roi.state if roi else None
 
-    def get_tags(self, name):
-        roi = self._name_to_roi.get(name)
-        return roi.tags if roi else set()
-
-    def set_tags(self, name, tags):
-        roi = self._name_to_roi.get(name)
-        if roi:
-            roi.tags = set(tags)
-
-    def get_all_names(self, exclude_deleted=False):
-        return [
-            name for name, roi in self._name_to_roi.items()
-            if not exclude_deleted or roi.state != Roi.ROI_STATE_DELETED
-        ]
-
     def list_rois(self):
         return list(self._name_to_roi.values())
 
@@ -271,18 +252,10 @@ class TinyRoiManager(QObject):
     def iter_all(self):
         return iter(self._name_to_roi.items())
 
-    def iter_by_state(self, target_state):
-        for name, roi in self._name_to_roi.items():
-            if roi.state == target_state:
-                yield name, roi
-
     def iter_by_filter(self, filter_fn):
         for name, roi in self._name_to_roi.items():
             if filter_fn(roi):
                 yield name, roi
-
-    def map_over_rois(self, func):
-        return [func(roi) for roi in self._name_to_roi.values() if roi.state != Roi.ROI_STATE_DELETED]
 
     def get_sample(self) -> Roi | None:
         for roi in self._name_to_roi.values():
@@ -310,15 +283,6 @@ class TinyRoiManager(QObject):
                 else:
                     log("Unexpected empty ROI encountered",type ="warning")
 
-    def _resolve_names(self, rois_or_names):
-        if not isinstance(rois_or_names, (list, set,np.ndarray)):
-            rois_or_names = [rois_or_names]
-        return [
-            r.name if hasattr(r, "name") else r
-            for r in rois_or_names
-        ]
-
-
     def force_feret(self):
         for roi in self._name_to_roi.values():
 
@@ -330,8 +294,3 @@ class TinyRoiManager(QObject):
         max_digits: int = len(key)-1
         return f"{self.prefix}{idx:0{max_digits}d}"
     
-    @staticmethod
-    def name_to_idx(name: str) -> int:
-        return int(name[1:])
-    
-

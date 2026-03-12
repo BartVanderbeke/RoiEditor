@@ -106,12 +106,6 @@ class RoiMeasurements(QObject):
 
         attach_extension_methods(self)
 
-
-    @classmethod
-    def is_valid(cls,msmts: "RoiMeasurements"):
-        return msmts is not None and msmts.data is not None and msmts.stats is not None
-
-
     def _compute_stats(self, subset_name):
         if not subset_name in self.stats:
             self.stats[subset_name]={}

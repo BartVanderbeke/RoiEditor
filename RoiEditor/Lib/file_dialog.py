@@ -13,10 +13,7 @@ from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtCore import QSettings, QStandardPaths
 from PyQt6.QtCore import QTimer, QPoint
 
-import sys
-
 from crumbs import normalize_path
-from tiny_log import log
 
 class FileDialog(QFileDialog):
     def __init__(self, x=100, y=100,title: str= "",filter: str ="*.*", parent=None):
@@ -36,12 +33,6 @@ class FileDialog(QFileDialog):
         self.repaint()
 
         self.settings = QSettings("RoiEditor", "RoiEditor")
-
-
-    def setParent(self,parent):
-        super().setParent(parent)
-    def setWindowFlag(self,flag):
-        super().setWindowFlag(flag)
 
     def setDirectoryfromSettings(self):
         default_dir = QStandardPaths.writableLocation(QStandardPaths.StandardLocation.HomeLocation)
@@ -73,4 +64,3 @@ class FileDialog(QFileDialog):
     #             w.setFocus()
     #             w.selectAll()
     #             break
-
