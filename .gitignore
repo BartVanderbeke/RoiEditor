@@ -27,6 +27,7 @@ pip-wheel-metadata/
 RoiEditor/tests/TestData/*_msmts.csv
 RoiEditor/tests/TestData/*_msmts.xlsx
 RoiEditor/tests/TestData/*_roiset.zip
+!RoiEditor/tests/TestData/A_stitch_roiset.zip
 RoiEditor/tests/TestData/RoiBackup/
 
 # OS/editor clutter
