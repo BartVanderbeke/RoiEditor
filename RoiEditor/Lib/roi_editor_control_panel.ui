@@ -459,10 +459,10 @@
             <item>
              <widget class="QCheckBox" name="cbWipeBackground">
               <property name="toolTip">
-               <string>When checked, the background will be wiped during label processing</string>
+               <string>When checked, a white background will be wiped during label processing</string>
               </property>
               <property name="text">
-               <string>Wipe background</string>
+               <string>Wipe white bkgrd</string>
               </property>
               <property name="checked">
                <bool>false</bool>
