@@ -24,10 +24,10 @@ from PyQt6.QtCore import QObject
 class TinyRoiManager(QObject):
 
 
-    __measurement_names = ["Area"] + feret_msmts + ["Central Nuclei","Peripheral Nuclei"] +["Color"]
-    __quantities = ["area"] + feret_quantities + ["count","Count"] + ["color"]
-    __units = ["px"] + feret_units + ["#","#"] + [""]
-    __scalers = [1.0*1.0] + feret_scalers + [1.0, 1.0] + [1.0]
+    __measurement_names = ["Area"] + feret_msmts + ["Central Nuclei","Peripheral Nuclei"] + ["Color", "Grayness"]
+    __quantities = ["area"] + feret_quantities + ["count","Count"] + ["color", "grayness"]
+    __units = ["px"] + feret_units + ["#","#"] + ["", ""]
+    __scalers = [1.0*1.0] + feret_scalers + [1.0, 1.0] + [1.0, 1.0]
     __msmt_info = dict()
 
     for idx in range(len(__measurement_names)):
@@ -208,6 +208,7 @@ class TinyRoiManager(QObject):
         for _, roi in self.iter_by_filter(filter):
             _result["Area"].append(roi.area)
             _result["Color"].append(roi.color)
+            _result["Grayness"].append(roi.grayness)
             ferets = roi.feret_values
             for feret_name, index in feret_index.items():
                 _result[feret_name].append(ferets[index])
