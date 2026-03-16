@@ -55,6 +55,7 @@ class Roi:
         self._n: int | None = n
         self.color: NDArray[Shape["1, 3"], Float64] | None = None  # a row vector with 3 columns H,S and V
         self.color_dist: float | None =None
+        self.grayness: float | None = None
 
         if n is None and xpoints is not None:
             self._n = len(xpoints)
@@ -164,5 +165,4 @@ class Roi:
             return Roi.ROI_STATE_SELECTED
         else:
             return Roi.ROI_STATE_ACTIVE
-
 

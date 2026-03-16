@@ -179,6 +179,8 @@ class TinyRoiFile:
                         json_value = {"state": Roi.state_to_str(roi.state), "tags": list(roi.tags), "parent": parent_name, "color": roi_color_list}
                     else:
                         json_value = {"state": Roi.state_to_str(roi.state), "tags": list(roi.tags), "parent": parent_name}
+                    if roi.grayness is not None:
+                        json_value["grayness"] = float(roi.grayness)
                     tag_json[roi.name] = json_value
             json_data = json.dumps(tag_json)
             zipf.writestr("tags.json", json_data.encode("utf-8"))
@@ -261,6 +263,8 @@ class TinyRoiFile:
                         roi.parent = _parent if _parent and _parent != "None" else None
                         _color: NDArray[Shape["1, 3"], Float64] | None = values.get("color", None)
                         roi.color = np.array(_color) if _color else None
+                        _grayness = values.get("grayness", None)
+                        roi.grayness = float(_grayness) if _grayness is not None else None
             else:
                 for roi_name in names:
                     data = roi_data_dict[roi_name]
@@ -315,4 +319,3 @@ class TinyRoiFile:
             n = 1
 
         return Roi(xpoints, ypoints, name=name, state=Roi.ROI_STATE_ACTIVE, center = center, bounds=(top, left, bottom, right), n=n)
-

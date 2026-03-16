@@ -17,7 +17,7 @@ from PyQt6.QtCore import QRunnable, QThreadPool, pyqtSignal, QObject
 from tiny_log import log
 from tiny_roi_manager import TinyRoiManager
 
-from average_color import average_color
+from average_color import average_color_and_grayness
 
 class WorkbenchWorkerSignals(QObject):
     finished = pyqtSignal()
@@ -35,15 +35,19 @@ class WorkbenchWorker(QRunnable):
         self.do()
 
     def do(self):
-            average_per_roi = average_color(self.images["background"], self.images["cell_label"])
+            average_per_roi, grayness_per_roi = average_color_and_grayness(
+                self.images["background"],
+                self.images["cell_label"],
+            )
             for roi_name,roi in self.rm["cell"].iter_all():
-                if roi.color is not None:
+                if roi.color is not None and roi.grayness is not None:
                     continue
                 idx= int(roi_name[1:]) # skip prefix
                 if idx >= len(average_per_roi):
                     log(f"Color missing for {roi_name}",type="error")
                     continue
                 roi.color = average_per_roi[idx]
+                roi.grayness = float(grayness_per_roi[idx])
 
             
             self.rm["cell"].force_feret()
@@ -54,4 +58,3 @@ def start_workbench_worker(images: dict[str, Any], rm: dict[str, TinyRoiManager]
     worker = WorkbenchWorker(images, rm, on_finished=on_worker_done)
     QThreadPool.globalInstance().start(worker)
     #worker.do()
-

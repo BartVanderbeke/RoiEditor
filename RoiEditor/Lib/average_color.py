@@ -12,8 +12,10 @@ I left the (GitHub) url of the original code next to the derived code.
 import numpy as np
 from numba import njit
 
+MAX_RGB_DISTANCE_TO_GRAY_AXIS = np.float32(np.sqrt(2.0 / 3.0))
+
 @njit(cache=True)
-def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
+def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     max_label = int(np.max(label_image))
     num_labels = max_label + 1
     sums = np.zeros((num_labels, 3), dtype=np.float64)
@@ -30,6 +32,7 @@ def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> np.nda
             sums[lbl, 2] += float(px[2])
 
     out = np.zeros((num_labels, 3), dtype=np.float32)
+    grayness = np.zeros(num_labels, dtype=np.float32)
     for lbl in range(num_labels):
         c = counts[lbl]
         if c > 0:
@@ -37,16 +40,32 @@ def _average_color_jit(image_rgb: np.ndarray, label_image: np.ndarray) -> np.nda
             out[lbl, 0] = np.float32(sums[lbl, 0] * inv)
             out[lbl, 1] = np.float32(sums[lbl, 1] * inv)
             out[lbl, 2] = np.float32(sums[lbl, 2] * inv)
+            avg = (out[lbl, 0] + out[lbl, 1] + out[lbl, 2]) / np.float32(3.0)
+            dr = out[lbl, 0] - avg
+            dg = out[lbl, 1] - avg
+            db = out[lbl, 2] - avg
+            distance = np.sqrt(dr * dr + dg * dg + db * db)
+            normalized = np.float32(1.0) - np.float32(distance / MAX_RGB_DISTANCE_TO_GRAY_AXIS)
+            if normalized < np.float32(0.0):
+                normalized = np.float32(0.0)
+            elif normalized > np.float32(1.0):
+                normalized = np.float32(1.0)
+            grayness[lbl] = normalized
 
-    return out
+    return out, grayness
 
 
-def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
+def average_color_and_grayness(image_rgb: np.ndarray, label_image: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     if image_rgb.ndim != 3 or image_rgb.shape[2] != 3:
         raise ValueError("image_rgb must be (H, W, 3)")
     if label_image.ndim != 2 or label_image.shape != image_rgb.shape[:2]:
         raise ValueError("label_image must be (H, W) matching the image")
     return _average_color_jit(image_rgb, label_image)
+
+
+def average_color(image_rgb: np.ndarray, label_image: np.ndarray) -> np.ndarray:
+    avg_colors, _ = average_color_and_grayness(image_rgb, label_image)
+    return avg_colors
 
 def global_average_rgb(avg_colors: np.ndarray) -> np.ndarray:
     """
