@@ -13,9 +13,10 @@ import sys
 import os
 import re
 import atexit
+from typing import cast
 
 from PyQt6.QtWidgets import (
-    QApplication, QMainWindow, QMessageBox, QLabel
+    QApplication, QCheckBox, QLineEdit, QMainWindow, QMessageBox, QLabel, QPushButton, QRadioButton, QTextEdit
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtWidgets import QButtonGroup
@@ -292,7 +293,7 @@ class RoiEditorControlPanel(QMainWindow):
         self.le_scale_from_file.setText('unknown')
         for v in self.files.values():
             v["name"]="<no name>"
-            qlbl=v["qlabel"]
+            qlbl: QLabel=v["qlabel"]
             qlbl.setText("<no name>")
             qlbl.setStyleSheet(self.fn_color_dict[False])
     
@@ -303,7 +304,7 @@ class RoiEditorControlPanel(QMainWindow):
     def reset_filename(self,for_which: str):
         v=self.files[for_which]
         v["name"]="<no name>"
-        qlbl=v["qlabel"]
+        qlbl: QLabel=v["qlabel"]
         qlbl.setText("<no name>")
         qlbl.setStyleSheet(self.fn_color_dict[False])
 
@@ -335,7 +336,9 @@ class RoiEditorControlPanel(QMainWindow):
                 physical_size_x= tiff_info.get("PhysicalSizeX",None)
                 if physical_size_x:
                     txt=str(physical_size_x)
+                    self.rb_unit_from_file = cast(QRadioButton, self.rb_unit_from_file)
                     self.rb_unit_from_file.setChecked(True)
+            self.le_scale_from_file = cast(QLineEdit, self.le_scale_from_file)
             self.le_scale_from_file.setText(txt)
 
     def on_click_browse_next(self):
@@ -456,15 +459,15 @@ class RoiEditorControlPanel(QMainWindow):
     def collect_and_report_settings(self):
         path_org = Path(self.files["org"]["name"])
         path_lbl = Path(self.files["cell_label"]["name"]) 
-        path_zip = Path(self.files["cell_zip"]["name"])
+        # path_zip = Path(self.files["cell_zip"]["name"])
         log(f"Original: {path_org.name}", type="info")
         log(f"Cell Label: {path_lbl.name}", type="info")
 
 
-        Context.gvars["detect_nuclei"]=self.cbDetectNukes.isChecked()
-        Context.gvars["wipe_background"]=self.cbWipeBackground.isChecked()
-        Context.gvars["remove_at_edge"]=self.cbEdge.isChecked()
-        Context.gvars["remove_small"]=self.cbSmall.isChecked()
+        Context.gvars["detect_nuclei"]=cast(QCheckBox, self.cbDetectNukes).isChecked()
+        Context.gvars["wipe_background"]=cast(QCheckBox, self.cbWipeBackground).isChecked()
+        Context.gvars["remove_at_edge"]=cast(QCheckBox, self.cbEdge).isChecked()
+        Context.gvars["remove_small"]=cast(QCheckBox, self.cbSmall).isChecked()
         log("Detect nuclei? ", "yes" if Context.gvars["detect_nuclei"] else "no", type="info")
         log("Wipe background? ", "yes" if Context.gvars["wipe_background"] else "no", type="info")
         log("Remove at edge? ", "yes" if Context.gvars["remove_at_edge"] else "no", type="info")
@@ -475,44 +478,44 @@ class RoiEditorControlPanel(QMainWindow):
 
 
     def connect_all_handlers(self):
-        self.cb_show_names.setChecked(Context.gvars["show_names"])
-        self.cb_show_deleted.setChecked(Context.gvars["show_deleted"])
-        self.cbDetectNukes.setChecked(Context.gvars["detect_nuclei"])
-        self.cbWipeBackground.setChecked(Context.gvars["wipe_background"])
-        self.cbEdge.setChecked(Context.gvars["remove_at_edge"])
-        self.cbSmall.setChecked(Context.gvars["remove_small"])
+        cast(QCheckBox, self.cb_show_names).setChecked(Context.gvars["show_names"])
+        cast(QCheckBox, self.cb_show_deleted).setChecked(Context.gvars["show_deleted"])
+        cast(QCheckBox, self.cbDetectNukes).setChecked(Context.gvars["detect_nuclei"])
+        cast(QCheckBox, self.cbWipeBackground).setChecked(Context.gvars["wipe_background"])
+        cast(QCheckBox, self.cbEdge).setChecked(Context.gvars["remove_at_edge"])
+        cast(QCheckBox, self.cbSmall).setChecked(Context.gvars["remove_small"])
         #self.cbPixel.setChecked(Context.gvars["force_pixel_as_unit"])
-        self.tbSize.setText(str(Context.gvars["roi_minimum_size"]))
-        self.cb_show_overlay.setChecked(Context.gvars["show_overlay"])        
-        self.btn_browse_original.clicked.connect(self.on_click_browse_original)
-        self.btn_clear_original.clicked.connect(self.on_click_clear_original)
-        self.btn_browse_cell_label.clicked.connect(self.on_click_browse_cell_label)
-        self.btn_clear_cell_label.clicked.connect(self.on_click_clear_cell_label)
-        self.btn_browse_cell_zip.clicked.connect(self.on_click_browse_cell_zip)
-        self.btn_clear_cell_zip.clicked.connect(self.on_click_clear_cell_zip)
-        self.btn_browse_nuke_label.clicked.connect(self.on_click_browse_nuke_label)
-        self.btn_clear_nuke_label.clicked.connect(self.on_click_clear_nuke_label)
-        self.btn_browse_nuke_zip.clicked.connect(self.on_click_browse_nuke_zip)
-        self.btn_clear_nuke_zip.clicked.connect(self.on_click_clear_nuke_zip)
+        cast(QTextEdit, self.tbSize).setText(str(Context.gvars["roi_minimum_size"]))
+        cast(QCheckBox, self.cb_show_overlay).setChecked(Context.gvars["show_overlay"])
+        cast(QPushButton, self.btn_browse_original).clicked.connect(self.on_click_browse_original)
+        cast(QPushButton, self.btn_clear_original).clicked.connect(self.on_click_clear_original)
+        cast(QPushButton, self.btn_browse_cell_label).clicked.connect(self.on_click_browse_cell_label)
+        cast(QPushButton, self.btn_clear_cell_label).clicked.connect(self.on_click_clear_cell_label)
+        cast(QPushButton, self.btn_browse_cell_zip).clicked.connect(self.on_click_browse_cell_zip)
+        cast(QPushButton, self.btn_clear_cell_zip).clicked.connect(self.on_click_clear_cell_zip)
+        cast(QPushButton, self.btn_browse_nuke_label).clicked.connect(self.on_click_browse_nuke_label)
+        cast(QPushButton, self.btn_clear_nuke_label).clicked.connect(self.on_click_clear_nuke_label)
+        cast(QPushButton, self.btn_browse_nuke_zip).clicked.connect(self.on_click_browse_nuke_zip)
+        cast(QPushButton, self.btn_clear_nuke_zip).clicked.connect(self.on_click_clear_nuke_zip)
 
-        self.btn_next.clicked.connect(self.on_click_browse_next)
-        self.btn_outer.clicked.connect(self.on_select_outer)
-        self.btn_saveRois.clicked.connect(self.on_save_rois)
-        self.btn_outliers.clicked.connect(self.on_select_outliers)
-        self.btn_saveTable.clicked.connect(self.on_save_table)
-        self.cb_show_names.toggled.connect(self.on_toggle_show_names)
+        cast(QPushButton, self.btn_next).clicked.connect(self.on_click_browse_next)
+        cast(QPushButton, self.btn_outer).clicked.connect(self.on_select_outer)
+        cast(QPushButton, self.btn_saveRois).clicked.connect(self.on_save_rois)
+        cast(QPushButton, self.btn_outliers).clicked.connect(self.on_select_outliers)
+        cast(QPushButton, self.btn_saveTable).clicked.connect(self.on_save_table)
+        cast(QCheckBox, self.cb_show_names).toggled.connect(self.on_toggle_show_names)
 
-        self.cb_show_deleted.toggled.connect(self.on_toggle_show_deleted)
+        cast(QCheckBox, self.cb_show_deleted).toggled.connect(self.on_toggle_show_deleted)
 
-        self.cb_show_overlay.toggled.connect(self.on_toggle_show_overlay)
+        cast(QCheckBox, self.cb_show_overlay).toggled.connect(self.on_toggle_show_overlay)
 
-        self.btn_prev.clicked.connect(self.on_previous)
-        self.btn_finish.clicked.connect(self.on_finish)
+        cast(QPushButton, self.btn_prev).clicked.connect(self.on_previous)
+        cast(QPushButton, self.btn_finish).clicked.connect(self.on_finish)
 
         #self.bg_unit.idToggled.connect(self.on_bg_unit_toggled)
 
-        self.le_custom_scale.textChanged.connect(self.custom_scale_validate)
-        self.tbSize.textChanged.connect(self.remove_small_validate)
+        cast(QLineEdit, self.le_custom_scale).textChanged.connect(self.custom_scale_validate)
+        cast(QTextEdit, self.tbSize).textChanged.connect(self.remove_small_validate)
 
     def set_up_key_interceptor(self):
         
@@ -558,21 +561,25 @@ class RoiEditorControlPanel(QMainWindow):
 
     def custom_scale_validate(self: 'RoiEditorControlPanel',text: str):
         (ok,_) = self.is_custom_scale_valid()
+        _le_custom_scale: QLineEdit = self.le_custom_scale
         if ok:
-            self.le_custom_scale.setStyleSheet("")
+
+            _le_custom_scale.setStyleSheet("")
         else:
-            self.le_custom_scale.setStyleSheet("QLineEdit { border: 1px solid red; }")
+            _le_custom_scale.setStyleSheet("QLineEdit { border: 1px solid red; }")
 
     def remove_small_validate(self: 'RoiEditorControlPanel',text:str):
         (ok,_) = self.is_remove_small_valid()
+        _tbSize: QTextEdit = self.tbSize
         if ok:
-            self.tbSize.setStyleSheet("")
+            _tbSize.setStyleSheet("")
         else:
-            self.tbSize.setStyleSheet("QLineEdit { border: 1px solid red; }")
+            _tbSize.setStyleSheet("QLineEdit { border: 1px solid red; }")
 
     def validate_entries_and_continue(self: 'RoiEditorControlPanel'):
         checked_id = self.bg_unit.checkedId()
-        scale_text = self.le_scale_from_file.text()
+        _le_scale_from_file: QLineEdit = self.le_scale_from_file
+        scale_text = _le_scale_from_file.text()
         scale_from_file = (scale_text != '') and (scale_text!='unknown')
         ok_from_file = not (checked_id==self.ID_FROM_FILE) or scale_from_file # P => Q == not P or Q
         (ok_min_size,min_size) = self.is_remove_small_valid()
