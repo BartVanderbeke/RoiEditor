@@ -1,4 +1,4 @@
-from PyQt6.QtCore import Qt, QRegularExpression
+from PyQt6.QtCore import Qt, QRegularExpression, QSettings
 from PyQt6.QtWidgets import (
     QDialog, QLabel, QLineEdit, QDialogButtonBox, QGridLayout
 )
@@ -114,6 +114,48 @@ class UserInfoDialog(QDialog):
         fg = self.frameGeometry()
         fg.moveCenter(avail.center())
         self.move(fg.topLeft())
+
+
+USER_INFO_KEYS = {
+    "first_name": "UserInfo/first_name",
+    "last_name": "UserInfo/last_name",
+    "organization": "UserInfo/organization",
+}
+
+
+def load_user_info(settings: QSettings | None = None) -> dict[str, str]:
+    settings = settings or QSettings("RoiEditor", "RoiEditor")
+    return {
+        key: str(settings.value(path, "") or "")
+        for key, path in USER_INFO_KEYS.items()
+    }
+
+
+def is_user_info_complete(user_info: dict[str, str]) -> bool:
+    return all(user_info.get(key, "") for key in USER_INFO_KEYS)
+
+
+def save_user_info(user_info: dict[str, str], settings: QSettings | None = None) -> None:
+    settings = settings or QSettings("RoiEditor", "RoiEditor")
+    for key, path in USER_INFO_KEYS.items():
+        settings.setValue(path, user_info.get(key, ""))
+
+
+def ensure_user_info(parent=None, settings: QSettings | None = None) -> tuple[dict[str, str], bool]:
+    settings = settings or QSettings("RoiEditor", "RoiEditor")
+    user_info = load_user_info(settings)
+    if is_user_info_complete(user_info):
+        return user_info, True
+
+    dlg = UserInfoDialog(parent=parent)
+    result = dlg.exec()
+    if result:
+        user_info = dlg.get_values()
+        if is_user_info_complete(user_info):
+            save_user_info(user_info, settings)
+            return user_info, True
+
+    return user_info, False
 
 # --- Minimal usage example ---
 if __name__ == "__main__":
