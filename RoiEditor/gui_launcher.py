@@ -11,7 +11,7 @@ I left the (GitHub) url of the original code next to the derived code.
 """
 import sys
 from PyQt6.QtWidgets import (
-    QApplication, QWidget
+    QApplication
 )
 from PyQt6.QtGui import QIcon
 from PyQt6.QtCore import Qt, QTimer
@@ -24,7 +24,7 @@ from roi_editor_control_panel import RoiEditorControlPanel
 """ the class hierarchy of RoiEditor is explained in RoiEditorControlPanel """
 """ RoiEditorControlPanel is the top level (window/widget) class"""
 
-from user_info import UserInfoDialog
+from user_info import ensure_user_info
 from PyQt6.QtCore import QSettings
 
 import warnings
@@ -33,20 +33,13 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTyp
 # on Windows settings are stored in the registry:
 # HKEY_CURRENT_USER\Software\RoiEditor\RoiEditor
 settings = QSettings("RoiEditor", "RoiEditor")
-first_name = settings.value("UserInfo/first_name", "")
-last_name = settings.value("UserInfo/last_name", "")
-organization = settings.value("UserInfo/organization", "")
-dummy=None
 
 def launch():
     global settings
-    global first_name
-    global last_name
-    global organization
-    global dummy
 
     app = QApplication(sys.argv)
     app.setWindowIcon(QIcon("./Lib/icon.png"))
+    app.setStyleSheet(overall)
     app.setQuitOnLastWindowClosed(True)
 
     from PyQt6.QtWidgets import QGraphicsTextItem
@@ -54,17 +47,11 @@ def launch():
 
     """" 90% of the stuff below prevents the windows to first flash a white canvas when they appear """
 
-    dummy=QWidget()
+    original_chooser = QOriginalFileChooser(parent=None)
+    label_chooser = QLabelFileChooser(parent=None)
+    roi_chooser = QRoiFileChooser(parent=None)
 
-    dummy.setStyleSheet(overall)
-    dummy.hide()
-    dummy.move(0,0)
-
-    original_chooser = QOriginalFileChooser(parent=dummy)
-    label_chooser = QLabelFileChooser(parent=dummy)
-    roi_chooser = QRoiFileChooser(parent=dummy)
-
-    window = RoiEditorControlPanel(parent=dummy)
+    window = RoiEditorControlPanel(parent=None)
 
 
     log_window = LogWindow(parent=window)
@@ -79,23 +66,8 @@ def launch():
     sys.stdout = redirector
     sys.stderr = redirector
 
-    
-
-    user_info_ok = (first_name and last_name and organization)
-    if not user_info_ok:
-        log("Requesting user info", type="info", log_level=1000)
-        dlg = UserInfoDialog(parent=dummy)
-        result = dlg.exec()
-        if result:
-            user_info = dlg.get_values()
-            first_name = user_info.get("first_name", "")
-            last_name = user_info.get("last_name", "")
-            organization = user_info.get("organization", "")
-            user_info_ok = (first_name and last_name and organization)
-            if user_info_ok:
-                settings.setValue("UserInfo/first_name", first_name)
-                settings.setValue("UserInfo/last_name", last_name)
-                settings.setValue("UserInfo/organization", organization)
+    log("Requesting user info", type="info", log_level=1000)
+    user_info, user_info_ok = ensure_user_info(parent=window, settings=settings)
     if not user_info_ok:
         log("User info dialog was cancelled or invalid. Proceeding without user info", type="warning")
     QTimer.singleShot(0, lambda: show())
@@ -103,9 +75,9 @@ def launch():
 
 
     def show():
-        global first_name
         window.show()
         log_window.show()
+        first_name = user_info.get("first_name", "")
         if not first_name:
             log(f"Good day, esteemed user.", type="happy", log_level=0)
         else:

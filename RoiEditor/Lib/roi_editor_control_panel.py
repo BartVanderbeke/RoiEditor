@@ -12,6 +12,7 @@ I left the (GitHub) url of the original code next to the derived code.
 import sys
 import os
 import re
+import atexit
 
 from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QMessageBox, QLabel
@@ -136,6 +137,11 @@ class RoiEditorControlPanel(QMainWindow):
         self.closing=True
         sys.stdout = self.original_stdout
         sys.stderr = self.original_stderr
+        try:
+            import colorama.initialise as colorama_initialise
+            atexit.unregister(colorama_initialise.reset_all)
+        except Exception:
+            pass
         
         if self.workbench:
             self.clean_up()
@@ -144,7 +150,8 @@ class RoiEditorControlPanel(QMainWindow):
         self.close_windows([])
         super().close()
         self.deleteLater()
-        self.parentWidget().close()
+        if self.parentWidget():
+            self.parentWidget().close()
         if a0:
             a0.accept()
 
