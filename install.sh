@@ -16,8 +16,8 @@ cat >"$DESKTOP_DIR/RoiEditor.desktop" <<EOF
 [Desktop Entry]
 Type=Application
 Name=RoiEditor
-Exec=python3 -m RoiEditor
-Path=$HOME
+Exec=$SCRIPT_DIR/tools/run_roieditor.sh
+Path=$SCRIPT_DIR
 Icon=$SCRIPT_DIR/assets/RoiEditor.ico
 Terminal=false
 Categories=Science;Graphics;
