@@ -18,9 +18,9 @@ if not defined PYW_PATH (
 
 powershell -NoProfile -Command ^
  "$s = (New-Object -ComObject WScript.Shell).CreateShortcut((Join-Path ([Environment]::GetFolderPath('Desktop')) 'RoiEditor.lnk')); " ^
- "$s.TargetPath = 'pythonw.exe'; " ^
- "$s.Arguments = '-m RoiEditor'; " ^
- "$s.WorkingDirectory = $env:USERPROFILE; " ^
+ "$s.TargetPath = '%~dp0tools\run_roieditor.bat'; " ^
+ "$s.Arguments = ''; " ^
+ "$s.WorkingDirectory = '%~dp0'; " ^
  "$s.IconLocation = '%~dp0assets\RoiEditor.ico'; " ^
  "$s.Save()"
 echo [2/3] Created RoiEditor shortcut on desktop
