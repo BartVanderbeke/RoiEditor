@@ -9,11 +9,15 @@ When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
 """
+import sys
+
 from PyQt6.QtWidgets import QFileDialog
 from PyQt6.QtCore import QSettings, QStandardPaths
 from PyQt6.QtCore import QTimer, QPoint
 
 from crumbs import normalize_path
+
+IS_WINDOWS = sys.platform.startswith("win")
 
 class FileDialog(QFileDialog):
     def __init__(self, x=100, y=100,title: str= "",filter: str ="*.*", parent=None):
@@ -26,11 +30,11 @@ class FileDialog(QFileDialog):
 
         self.target_pos = QPoint(x, y)
 
-        self.move(-5000, -5000)
-        self.setWindowOpacity(0)  # Optioneel: helemaal onzichtbaar
-
-        self.show()
-        self.repaint()
+        if IS_WINDOWS:
+            self.move(-5000, -5000)
+            self.setWindowOpacity(0)  # Optioneel: helemaal onzichtbaar
+            self.show()
+            self.repaint()
 
         self.settings = QSettings("RoiEditor", "RoiEditor")
 
@@ -49,7 +53,10 @@ class FileDialog(QFileDialog):
 
 
     def showDialog(self):
-        QTimer.singleShot(100, self._reveal)
+        if IS_WINDOWS:
+            QTimer.singleShot(100, self._reveal)
+        else:
+            self.move(self.target_pos)
         return self.exec()
 
     def _reveal(self):

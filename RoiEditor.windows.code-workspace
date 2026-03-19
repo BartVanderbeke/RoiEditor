@@ -1,10 +1,44 @@
 {
     "folders": [
         {
-            "path": "."
+            "path": "D:/source/repos/RoiEditor/"
         }
     ],
     "settings": {
-        "python.defaultInterpreterPath": "${workspaceFolder}\\.venv-win\\Scripts\\python.exe"
+        "python.defaultInterpreterPath": "D:/source/repos/RoiEditor/.venv-win/Scripts/python.exe",
+        "python-envs.workspaceSearchPaths": ["D:/source/repos/RoiEditor/.venv-win"],		
+        "python.terminal.activateEnvironment": true,
+        "terminal.integrated.cwd": "${workspaceFolder}",
+        "terminal.integrated.defaultProfile.windows": "PowerShell",
+        "terminal.integrated.profiles.windows": {
+            "PowerShell": {
+                "source": "PowerShell",
+                "icon": "terminal-powershell"
+            },
+            "Command Prompt": {
+                "path": [
+                    "${env:windir}\\System32\\cmd.exe"
+                ],
+                "args": [],
+                "icon": "terminal-cmd"
+            }
+        },
+        "terminal.integrated.automationProfile.windows": {
+            "path": "${env:windir}\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+        }
+    }
+    ,
+    "launch": {
+        "configurations": [
+            {
+                "name": "RoiEditor (Windows)",
+                "type": "debugpy",
+                "request": "launch",
+                "module": "RoiEditor",
+                "cwd": "${workspaceFolder}",
+                "console": "integratedTerminal",
+                "justMyCode": false
+            }
+        ]
     }
 }

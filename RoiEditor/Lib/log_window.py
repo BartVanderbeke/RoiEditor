@@ -9,6 +9,8 @@ When code has been explicitly derived from someone else's code,
 I left the (GitHub) url of the original code next to the derived code.
 
 """
+import sys
+
 from PyQt6.QtWidgets import QWidget, QVBoxLayout, QPlainTextEdit
 from PyQt6.QtWidgets import QWidget,  QVBoxLayout
 from PyQt6.QtCore import QObject, pyqtSignal
@@ -16,10 +18,12 @@ from PyQt6.QtCore import Qt
 import re
 
 from PyQt6.QtGui import QFont
+IS_WINDOWS = sys.platform.startswith("win")
 class LogWindow(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        super().move(-5000,-5000)
+        if IS_WINDOWS:
+            super().move(-5000,-5000)
         self.setWindowFlag(Qt.WindowType.Window)
         self.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         # hide the close button

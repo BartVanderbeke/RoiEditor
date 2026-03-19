@@ -33,6 +33,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTyp
 # on Windows settings are stored in the registry:
 # HKEY_CURRENT_USER\Software\RoiEditor\RoiEditor
 settings = QSettings("RoiEditor", "RoiEditor")
+IS_WINDOWS = sys.platform.startswith("win")
 
 def launch():
     global settings
@@ -75,6 +76,8 @@ def launch():
 
 
     def show():
+        if not IS_WINDOWS:
+            move_in_view()
         window.show()
         log_window.show()
         first_name = user_info.get("first_name", "")
@@ -94,7 +97,8 @@ def launch():
 
     QTimer.singleShot(12, lambda: window.connect_all_handlers())
 
-    QTimer.singleShot(15, lambda: move_in_view())
+    if IS_WINDOWS:
+        QTimer.singleShot(15, lambda: move_in_view())
 
     QTimer.singleShot(20, lambda: attach_choosers())
 

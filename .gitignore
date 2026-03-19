@@ -1,4 +1,10 @@
+# Local virtual environments
 .venv/
+.venv*/
+venv/
+venv*/
+env/
+env*/
 .vscode/
 .idea/
 
