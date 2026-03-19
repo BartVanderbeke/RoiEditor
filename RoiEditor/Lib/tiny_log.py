@@ -10,6 +10,7 @@ I left the (GitHub) url of the original code next to the derived code.
 
 """
 import inspect
+import sys
 import numpy as np
 
 class classproperty:
@@ -98,6 +99,16 @@ class TinyLog:
         if max_len <= 3:
             return '.' * max_len
         return text[:max_len-3] + '...'
+
+    @staticmethod
+    def _print_safely(full_line, sep='', end='\n', file=None, flush=False):
+        try:
+            print(full_line, sep=sep, end=end, file=file, flush=flush)
+        except UnicodeEncodeError:
+            stream = file if file is not None else sys.stdout
+            encoding = getattr(stream, "encoding", None) or "utf-8"
+            sanitized = full_line.encode(encoding, errors="replace").decode(encoding)
+            print(sanitized, sep=sep, end=end, file=file, flush=flush)
     
     @staticmethod
     def log(*args, sep='', end='\n', file=None, flush=False, type: str = "info",log_level: np.uint8 =LOG_LVL_NORMAL-1):
@@ -124,7 +135,7 @@ class TinyLog:
         if message:
             caller_padded = "" #caller_str.ljust(20)
             full_line = f"{COLOR}{caller_padded}{message}{RESET}"
-            print(full_line , sep=sep, end=end, file=file, flush=flush)
+            TinyLog._print_safely(full_line, sep=sep, end=end, file=file, flush=flush)
 
 
 def log(*args, sep=' ', end='\n', file=None, flush=False, type: str = "info",log_level: np.uint8 =TinyLog.LOG_LVL_NORMAL-1):

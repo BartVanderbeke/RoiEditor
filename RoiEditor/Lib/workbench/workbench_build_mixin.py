@@ -1,4 +1,5 @@
 from functools import partial
+import sys
 
 import cv2
 import numpy as np
@@ -177,6 +178,8 @@ class WorkbenchBuildMixin:
         bottom_bar_text_str = f"File: {fn}, {image_size_str}"
         self.roi_window.lbl_info.setText(bottom_bar_text_str)
         self.roi_window.draw_image()
+        if not sys.platform.startswith("win"):
+            self.roi_window.set_initial_pos_and_size()
         self.roi_window.showNormal()
 
         self.hist_plot = QHF(parent=self, on_measurement_selected=self.on_measurement_selected)

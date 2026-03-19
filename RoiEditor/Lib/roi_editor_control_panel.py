@@ -44,6 +44,8 @@ from event_eater_overlay import EventEaterOverlay
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
 
+IS_WINDOWS = sys.platform.startswith("win")
+
 
 class RoiEditorControlPanel(QMainWindow):
     """
@@ -69,7 +71,8 @@ class RoiEditorControlPanel(QMainWindow):
     ID_SPECIFIED = 3
     def __init__(self,parent):
         super().__init__(parent)
-        super().move(-10000, -10000)
+        if IS_WINDOWS:
+            super().move(-10000, -10000)
 
         self.setWindowTitle("RoiEditor - Control Panel")
         basepath = os.path.dirname(__file__)

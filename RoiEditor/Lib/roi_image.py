@@ -26,6 +26,7 @@ from typing import Callable, Optional
 from functools import partial
 from typing import Dict
 import numpy as np
+import sys
 
 from roi import Roi
 
@@ -40,6 +41,8 @@ from tiny_color import values_to_qbrush_dict
 
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning, message="sipPyTypeDict")
+
+IS_WINDOWS = sys.platform.startswith("win")
 
 
 def array2d_to_qpolygonf(_xdata, _ydata):
@@ -108,7 +111,8 @@ class RoiImageWindow(QMainWindow):
         flags &= ~Qt.WindowType.WindowCloseButtonHint
         self.setWindowFlags(flags)
 
-        super().move(-5000,-5000)
+        if IS_WINDOWS:
+            super().move(-5000,-5000)
 
         self.on_add_nucleus_here = on_add_nucleus_here
         self.on_any_change=on_any_change
